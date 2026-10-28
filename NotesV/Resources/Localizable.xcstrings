@@ -11,6 +11,26 @@
         }
       }
     },
+    "AI": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI"
+          }
+        }
+      }
+    },
+    "API key": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "API-nyckel"
+          }
+        }
+      }
+    },
     "Add Column": {
       "localizations": {
         "sv": {
@@ -27,6 +47,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lägg till rad"
+          }
+        }
+      }
+    },
+    "Agenda": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Agenda"
+          }
+        }
+      }
+    },
+    "Attendees": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deltagare"
           }
         }
       }
@@ -77,6 +117,56 @@
           "stringUnit": {
             "state": "translated",
             "value": "Checklista"
+          }
+        }
+      }
+    },
+    "Comma-separated names": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Namn separerade med kommatecken"
+          }
+        }
+      }
+    },
+    "Connected. %lld models available.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ansluten. %lld modeller finns."
+          }
+        }
+      }
+    },
+    "Couldn’t access the Keychain: %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kunde inte komma åt Nyckelringen: %@"
+          }
+        }
+      }
+    },
+    "Couldn’t check for the newest model, so NotesV used %@ from last time.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det gick inte att söka efter den senaste modellen, så NotesV använde %@ från förra gången."
+          }
+        }
+      }
+    },
+    "Couldn’t reach the server. Check your internet connection, or that Ollama or LM Studio is running.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det gick inte att nå servern. Kontrollera internetanslutningen, eller att Ollama eller LM Studio är igång."
           }
         }
       }
@@ -171,12 +261,72 @@
         }
       }
     },
+    "End": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Slut"
+          }
+        }
+      }
+    },
+    "End time": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sluttid"
+          }
+        }
+      }
+    },
     "Format": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Format"
+          }
+        }
+      }
+    },
+    "Generate": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa"
+          }
+        }
+      }
+    },
+    "Generate Protocol": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa protokoll"
+          }
+        }
+      }
+    },
+    "Generate Protocol…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa protokoll…"
+          }
+        }
+      }
+    },
+    "Generate a meeting protocol from this note": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa ett mötesprotokoll från den här anteckningen"
           }
         }
       }
@@ -221,12 +371,112 @@
         }
       }
     },
+    "Key header": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Huvud för nyckel"
+          }
+        }
+      }
+    },
+    "LM Studio (on this Mac)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "LM Studio (på den här datorn)"
+          }
+        }
+      }
+    },
+    "Language": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Språk"
+          }
+        }
+      }
+    },
+    "Latest": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senaste"
+          }
+        }
+      }
+    },
+    "Location": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plats"
+          }
+        }
+      }
+    },
     "Mark as Checked": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Markera som bockad"
+          }
+        }
+      }
+    },
+    "Meeting": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Möte"
+          }
+        }
+      }
+    },
+    "Meeting details and notes are sent to a server on this Mac and don’t leave it.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mötesuppgifter och anteckningar skickas till en server på den här datorn och lämnar den inte."
+          }
+        }
+      }
+    },
+    "Meeting details and notes are sent to the server above. They leave your Microsoft 365 organization.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mötesuppgifter och anteckningar skickas till servern ovan. De lämnar din Microsoft 365-organisation."
+          }
+        }
+      }
+    },
+    "Microsoft 365 Copilot will be added later.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Microsoft 365 Copilot läggs till senare."
+          }
+        }
+      }
+    },
+    "Model": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modell"
           }
         }
       }
@@ -341,12 +591,72 @@
         }
       }
     },
+    "Ollama (on this Mac)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ollama (på den här datorn)"
+          }
+        }
+      }
+    },
     "On My Mac": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "På min Mac"
+          }
+        }
+      }
+    },
+    "Open Settings…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna inställningar…"
+          }
+        }
+      }
+    },
+    "OpenAI-compatible API": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OpenAI-kompatibelt API"
+          }
+        }
+      }
+    },
+    "Optional": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valfri"
+          }
+        }
+      }
+    },
+    "Organizer": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Organisatör"
+          }
+        }
+      }
+    },
+    "Other OpenAI-compatible server": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annan OpenAI-kompatibel server"
           }
         }
       }
@@ -371,6 +681,16 @@
         }
       }
     },
+    "Preset": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förval"
+          }
+        }
+      }
+    },
     "Previous 30 Days": {
       "localizations": {
         "sv": {
@@ -387,6 +707,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Föregående 7 dagarna"
+          }
+        }
+      }
+    },
+    "Protocol created": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protokollet är skapat"
+          }
+        }
+      }
+    },
+    "Provider": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tjänst"
           }
         }
       }
@@ -431,6 +771,36 @@
         }
       }
     },
+    "Required": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Krävs"
+          }
+        }
+      }
+    },
+    "Room or meeting link": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rum eller möteslänk"
+          }
+        }
+      }
+    },
+    "Same as the notes": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Samma som anteckningarna"
+          }
+        }
+      }
+    },
     "Search": {
       "localizations": {
         "sv": {
@@ -441,12 +811,52 @@
         }
       }
     },
+    "Server": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server"
+          }
+        }
+      }
+    },
+    "Server address": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serveradress"
+          }
+        }
+      }
+    },
+    "Set up an AI provider in Settings first.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ställ först in en AI-tjänst i Inställningar."
+          }
+        }
+      }
+    },
     "Something went wrong": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Något gick fel"
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
           }
         }
       }
@@ -481,6 +891,16 @@
         }
       }
     },
+    "Test Connection": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testa anslutning"
+          }
+        }
+      }
+    },
     "The folder “%@” isn’t empty.": {
       "localizations": {
         "sv": {
@@ -491,12 +911,122 @@
         }
       }
     },
+    "The model’s answer couldn’t be read as a protocol. Try again or choose another model.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modellens svar gick inte att läsa som ett protokoll. Försök igen eller välj en annan modell."
+          }
+        }
+      }
+    },
+    "The notes are sent to %@, outside your Microsoft 365 organization.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteckningarna skickas till %@, utanför din Microsoft 365-organisation."
+          }
+        }
+      }
+    },
+    "The notes are sent to a server on this Mac.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteckningarna skickas till en server på den här datorn."
+          }
+        }
+      }
+    },
     "The notes in the folder will be moved to Recently Deleted.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Anteckningarna i mappen flyttas till Nyligen raderade."
+          }
+        }
+      }
+    },
+    "The server address isn’t a valid URL.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serveradressen är inte en giltig URL."
+          }
+        }
+      }
+    },
+    "The server couldn’t find the address or the model. Check the server address and model in Settings.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servern hittade inte adressen eller modellen. Kontrollera serveradressen och modellen i Inställningar."
+          }
+        }
+      }
+    },
+    "The server didn’t accept the API key. Check the key in Settings.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servern godkände inte API-nyckeln. Kontrollera nyckeln i Inställningar."
+          }
+        }
+      }
+    },
+    "The server offers several models. Choose one in Settings.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servern har flera modeller. Välj en i Inställningar."
+          }
+        }
+      }
+    },
+    "The server rejected the request.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servern avvisade förfrågan."
+          }
+        }
+      }
+    },
+    "The server rejected the request: %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servern avvisade förfrågan: %@"
+          }
+        }
+      }
+    },
+    "The server returned an error (%lld).": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servern svarade med ett fel (%lld)."
+          }
+        }
+      }
+    },
+    "The server returned an error (%lld): %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Servern svarade med ett fel (%lld): %@"
           }
         }
       }
@@ -521,6 +1051,16 @@
         }
       }
     },
+    "Too many requests or no credits left. Wait a moment and try again.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "För många förfrågningar eller slut på krediter. Vänta en stund och försök igen."
+          }
+        }
+      }
+    },
     "Underline": {
       "localizations": {
         "sv": {
@@ -537,6 +1077,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lossa anteckning"
+          }
+        }
+      }
+    },
+    "Use https. Plain http is only allowed for servers on this Mac (localhost).": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd https. Vanlig http är bara tillåtet för servrar på den här datorn (localhost)."
+          }
+        }
+      }
+    },
+    "Writing the protocol…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skriver protokollet…"
           }
         }
       }

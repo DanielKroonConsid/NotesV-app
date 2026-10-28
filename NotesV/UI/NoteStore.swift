@@ -139,6 +139,20 @@ final class NoteStore {
         selectedNoteID = note.id
     }
 
+    /// Adds a finished note, e.g. a generated protocol, saves it and selects it.
+    func addNote(_ note: Note) {
+        var note = note
+        if note.folderID == NoteFolder.recentlyDeletedName || !folders.contains(where: { $0.id == note.folderID }),
+           let defaultFolderID {
+            note.folderID = defaultFolderID
+        }
+        notes[note.id] = note
+        searchText = ""
+        selectedFolderID = note.folderID
+        selectedNoteID = note.id
+        scheduleSave(note.id)
+    }
+
     func updateDocument(_ document: NoteDocument, of noteID: UUID) {
         guard var note = notes[noteID], note.document != document else { return }
         note.document = document

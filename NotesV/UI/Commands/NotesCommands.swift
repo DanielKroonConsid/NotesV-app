@@ -12,6 +12,7 @@ enum EditorAction {
 /// The menu bar commands, with the same keyboard shortcuts as Apple Notes.
 struct NotesCommands: Commands {
     let store: NoteStore
+    let protocolGeneration: ProtocolGenerationModel
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -26,6 +27,11 @@ struct NotesCommands: Commands {
                 }
             }
             .disabled(store.selectedNote == nil || store.selectedNote?.folderID == NoteFolder.recentlyDeletedName)
+            Button("Generate Protocol…") {
+                protocolGeneration.sourceNoteID = store.selectedNoteID
+            }
+            .keyboardShortcut("p", modifiers: [.command, .option])
+            .disabled(store.selectedNote?.document.hasContent != true)
         }
 
         CommandMenu("Format") {
