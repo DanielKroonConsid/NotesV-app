@@ -22,11 +22,11 @@ the user jots down short notes, and an AI provider expands them into a structure
 | Rich-text editor | `NSTextView` wrapped in `NSViewRepresentable` (SwiftUI's rich-text `TextEditor` needs macOS 26) |
 | Auth | MSAL for macOS (Microsoft Entra ID), multi-tenant (`organizations` authority) |
 | M365 data | Microsoft Graph REST API |
-| AI / protocol generation | **Microsoft 365 Copilot** (default) or **OpenAI API** (alternative), selectable by the user |
+| AI / protocol generation | **Microsoft 365 Copilot** (default) or any **OpenAI-compatible API** (alternative: OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio…), selectable by the user |
 | Storage | **Markdown files** in a **OneDrive folder the user picks** in Settings |
 
 Don't add third-party dependencies without asking first. Prefer Apple frameworks and the official Microsoft SDKs.
-Call the OpenAI API directly over HTTPS with `URLSession` rather than adding an SDK.
+Call OpenAI-compatible APIs directly with `URLSession` (`Services/AI/OpenAICompatibleClient`) rather than adding an SDK.
 
 ## Core features
 
@@ -106,24 +106,28 @@ All protocol generation goes through a single `ProtocolGenerator` protocol with 
 - **`CopilotProtocolGenerator`** (default): uses **the Copilot that comes with standard Microsoft 365 business plans** (e.g. Business Basic), through the user's M365 sign-in, with no extra Copilot add-on license.
   - Before building this, check the current Microsoft docs to confirm an API exists for that tier. As far as we know, Microsoft's Copilot APIs have so far needed the paid **Microsoft 365 Copilot** license. If that's still true, stop and ask the user before going further.
   - If Copilot isn't available to a user or tenant, show a clear message and offer to switch to OpenAI.
-- **`OpenAIProtocolGenerator`** (alternative): uses the OpenAI API with the user's own API key.
-  - **Default model: always the latest.** At runtime, read OpenAI's models list (`GET /v1/models`), keep only general text/chat models, and pick the newest. Cache the result for a day. Never hard-code a model name as the default.
+- **`OpenAIProtocolGenerator`** (alternative): works with **any OpenAI-compatible server** through its Chat Completions API (`GET {base URL}/models`, `POST {base URL}/chat/completions`).
+  - The user picks a preset (OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio) or enters any base URL. The key is sent as `Authorization: Bearer` or, for Azure, `api-key`.
+  - **The API key is optional for local servers** (Ollama, LM Studio). **Plain `http` is only allowed for `localhost`, `127.0.0.1` and `*.local`**; everything else must use `https`. The ATS exception for this lives in `Config/NotesV-Info.plist` (`NSAllowsLocalNetworking`).
+  - Ask for structured output with `response_format: json_schema` (`MeetingProtocol.jsonSchema`). If the server answers 400, fall back to `json_object`, then to plain text with the schema in the prompt, and extract the JSON from the answer.
+  - **Default model: always the latest.** At runtime, read the server's models list, keep only text/chat models, and pick the newest by `created`. If the server doesn't report `created`, use its only model, or ask the user to choose one when there are several. Cache the result for a day per server. Never hard-code a model name as the default.
   - If the model lookup fails, use the last cached model and show a warning.
   - Settings lets the user override this with a specific model.
-  - Tell the user in the UI that meeting data is sent to OpenAI, outside their Microsoft 365 tenant.
+  - Tell the user in the UI where meeting data is sent: outside their Microsoft 365 tenant, or, for a local server, to this Mac only.
 
 Provider selection:
 - A **Settings** pane (SwiftUI `Settings` scene) lets the user:
   - choose the AI provider
-  - enter or remove their OpenAI API key
-  - choose the OpenAI model ("Latest" by default)
+  - choose the server (preset or base URL) and how the key is sent
+  - enter or remove the API key
+  - choose the model ("Latest" by default) and test the connection
   - pick the OneDrive storage folder
 - Remember the provider, the model choice and the folder ID in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
 
 ## Security and secrets
 
 - **M365 tokens:** let MSAL handle token caching in the Keychain. Never log, print or store tokens yourself.
-- **OpenAI API key:** store it **only in the macOS Keychain**. Never in `UserDefaults`, files, logs or source code, and never sync it to OneDrive.
+- **AI API keys:** store them **only in the macOS Keychain** (one per preset, via `KeychainService`). Never in `UserDefaults`, files, logs or source code, and never sync it to OneDrive.
 - **App registration:** a multi-tenant Entra ID app. Customer admins may need to grant consent, so request the **smallest set of Graph permissions** that works: `User.Read`, `Calendars.Read` and `Files.ReadWrite`, plus whatever the Copilot API needs.
 - Never commit client secrets, real customer tenant IDs or API keys. A public client desktop app shouldn't need a client secret.
 
@@ -141,5 +145,5 @@ Provider selection:
 
 - Follow the Swift API Design Guidelines. Use SwiftLint/swift-format defaults if added.
 - Prefer small views and computed properties over large view bodies.
-- Write unit tests (Swift Testing) for the domain logic, Markdown round-trips, protocol formatting and service parsing, using mocked Graph and OpenAI responses. Tests must never call the real APIs.
+- Write unit tests (Swift Testing) for the domain logic, Markdown round-trips, protocol formatting and service parsing, using mocked Graph and OpenAI responses (`MockTransport` replaces `HTTPTransport`). Tests must never call the real APIs.
 - Code, comments and commit messages are in **English**.

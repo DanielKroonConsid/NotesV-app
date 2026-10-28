@@ -3,6 +3,7 @@ import SwiftUI
 /// The three-column Notes layout: folders, note list and editor.
 struct ContentView: View {
     @Environment(NoteStore.self) private var store
+    @Environment(ProtocolGenerationModel.self) private var protocolGeneration
 
     var body: some View {
         @Bindable var store = store
@@ -30,6 +31,25 @@ struct ContentView: View {
         } message: {
             Text("You can’t undo this action.")
         }
+        .sheet(isPresented: Binding(
+            get: { protocolGeneration.sourceNoteID != nil },
+            set: { if !$0 { protocolGeneration.sourceNoteID = nil } }
+        )) {
+            if let noteID = protocolGeneration.sourceNoteID, let note = store.notes[noteID] {
+                GenerateProtocolSheet(note: note)
+            }
+        }
+        .alert(
+            "Protocol created",
+            isPresented: Binding(
+                get: { protocolGeneration.warning != nil },
+                set: { if !$0 { protocolGeneration.warning = nil } }
+            )
+        ) {
+            Button("OK") {}
+        } message: {
+            Text(verbatim: protocolGeneration.warning ?? "")
+        }
         .alert(
             "Something went wrong",
             isPresented: Binding(
@@ -47,6 +67,7 @@ struct ContentView: View {
 /// The editor for the selected note, with the Notes formatting toolbar.
 struct NoteDetailView: View {
     @Environment(NoteStore.self) private var store
+    @Environment(ProtocolGenerationModel.self) private var protocolGeneration
 
     var body: some View {
         Group {
@@ -82,6 +103,13 @@ struct NoteDetailView: View {
                     Label("Table", systemImage: "tablecells")
                 }
                 .help(Text("Table"))
+                Button {
+                    protocolGeneration.sourceNoteID = store.selectedNoteID
+                } label: {
+                    Label("Generate Protocol", systemImage: "sparkles")
+                }
+                .help(Text("Generate a meeting protocol from this note"))
+                .disabled(store.selectedNote?.document.hasContent != true)
             }
         }
         .disabled(store.selectedNote == nil)
