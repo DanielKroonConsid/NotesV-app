@@ -1,0 +1,566 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "A folder named “%@” already exists.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det finns redan en mapp som heter ”%@”."
+          }
+        }
+      }
+    },
+    "Add Column": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till kolumn"
+          }
+        }
+      }
+    },
+    "Add Row": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till rad"
+          }
+        }
+      }
+    },
+    "Body": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Brödtext"
+          }
+        }
+      }
+    },
+    "Bold": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fetstil"
+          }
+        }
+      }
+    },
+    "Bulleted List": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Punktlista"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avbryt"
+          }
+        }
+      }
+    },
+    "Checklist": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checklista"
+          }
+        }
+      }
+    },
+    "Create": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa"
+          }
+        }
+      }
+    },
+    "Dashed List": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Strecklista"
+          }
+        }
+      }
+    },
+    "Decrease Indent": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minska indrag"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera"
+          }
+        }
+      }
+    },
+    "Delete Column": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera kolumn"
+          }
+        }
+      }
+    },
+    "Delete Folder": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera mapp"
+          }
+        }
+      }
+    },
+    "Delete Row": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Radera rad"
+          }
+        }
+      }
+    },
+    "Delete this folder?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vill du radera mappen?"
+          }
+        }
+      }
+    },
+    "Delete this note permanently?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vill du radera anteckningen permanent?"
+          }
+        }
+      }
+    },
+    "Format": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format"
+          }
+        }
+      }
+    },
+    "Heading": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rubrik"
+          }
+        }
+      }
+    },
+    "Increase Indent": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öka indrag"
+          }
+        }
+      }
+    },
+    "Insert Table": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Infoga tabell"
+          }
+        }
+      }
+    },
+    "Italic": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kursiv"
+          }
+        }
+      }
+    },
+    "Mark as Checked": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera som bockad"
+          }
+        }
+      }
+    },
+    "Monostyled": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fast breddsteg"
+          }
+        }
+      }
+    },
+    "Move To": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta till"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Namn"
+          }
+        }
+      }
+    },
+    "New Folder": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny mapp"
+          }
+        }
+      }
+    },
+    "New Note": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny anteckning"
+          }
+        }
+      }
+    },
+    "No Note Selected": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen anteckning vald"
+          }
+        }
+      }
+    },
+    "No Notes": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inga anteckningar"
+          }
+        }
+      }
+    },
+    "No additional text": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen ytterligare text"
+          }
+        }
+      }
+    },
+    "Notes": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteckningar"
+          }
+        }
+      }
+    },
+    "Numbered List": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numrerad lista"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "On My Mac": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På min Mac"
+          }
+        }
+      }
+    },
+    "Pin Note": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fäst anteckning"
+          }
+        }
+      }
+    },
+    "Pinned": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fästa"
+          }
+        }
+      }
+    },
+    "Previous 30 Days": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föregående 30 dagarna"
+          }
+        }
+      }
+    },
+    "Previous 7 Days": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Föregående 7 dagarna"
+          }
+        }
+      }
+    },
+    "Recently Deleted": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyligen raderade"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt namn"
+          }
+        }
+      }
+    },
+    "Rename Folder": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt namn på mapp"
+          }
+        }
+      }
+    },
+    "Rename Folder…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Byt namn på mapp…"
+          }
+        }
+      }
+    },
+    "Search": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sök"
+          }
+        }
+      }
+    },
+    "Something went wrong": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Något gick fel"
+          }
+        }
+      }
+    },
+    "Strikethrough": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Genomstruken"
+          }
+        }
+      }
+    },
+    "Subheading": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underrubrik"
+          }
+        }
+      }
+    },
+    "Table": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tabell"
+          }
+        }
+      }
+    },
+    "The folder “%@” isn’t empty.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mappen ”%@” är inte tom."
+          }
+        }
+      }
+    },
+    "The notes in the folder will be moved to Recently Deleted.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteckningarna i mappen flyttas till Nyligen raderade."
+          }
+        }
+      }
+    },
+    "Title": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titel"
+          }
+        }
+      }
+    },
+    "Today": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Idag"
+          }
+        }
+      }
+    },
+    "Underline": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Understruken"
+          }
+        }
+      }
+    },
+    "Unpin Note": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lossa anteckning"
+          }
+        }
+      }
+    },
+    "Yesterday": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Igår"
+          }
+        }
+      }
+    },
+    "You can’t undo this action.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du kan inte ångra den här åtgärden."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
