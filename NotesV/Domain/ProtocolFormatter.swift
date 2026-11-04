@@ -18,20 +18,19 @@ enum ProtocolFormatter {
         var actionItems: String
         var none: String
         var missingOwner: String
-        var missingDueDate: String
 
         static let swedish = Labels(
             titlePrefix: "Protokoll", meetingInfo: "Mötesinformation", date: "Datum", location: "Plats",
             organizer: "Organisatör", attendees: "Deltagare", present: "Närvarande", absent: "Frånvarande",
             agenda: "Agenda och diskussion", decisions: "Beslut", actionItems: "Åtgärdspunkter",
-            none: "Inga noterade", missingOwner: "[Ansvarig saknas]", missingDueDate: "[Datum saknas]"
+            none: "Inga noterade", missingOwner: "[Ansvarig saknas]"
         )
 
         static let english = Labels(
             titlePrefix: "Minutes", meetingInfo: "Meeting info", date: "Date", location: "Location",
             organizer: "Organizer", attendees: "Attendees", present: "Present", absent: "Absent",
             agenda: "Agenda and discussion", decisions: "Decisions", actionItems: "Action items",
-            none: "None noted", missingOwner: "[Owner missing]", missingDueDate: "[Due date missing]"
+            none: "None noted", missingOwner: "[Owner missing]"
         )
 
         /// Swedish for "sv", English for everything else.
@@ -42,7 +41,7 @@ enum ProtocolFormatter {
         private init(
             titlePrefix: String, meetingInfo: String, date: String, location: String, organizer: String,
             attendees: String, present: String, absent: String, agenda: String, decisions: String,
-            actionItems: String, none: String, missingOwner: String, missingDueDate: String
+            actionItems: String, none: String, missingOwner: String
         ) {
             self.titlePrefix = titlePrefix
             self.meetingInfo = meetingInfo
@@ -57,7 +56,6 @@ enum ProtocolFormatter {
             self.actionItems = actionItems
             self.none = none
             self.missingOwner = missingOwner
-            self.missingDueDate = missingDueDate
         }
     }
 
@@ -99,22 +97,27 @@ enum ProtocolFormatter {
         }
         for item in minutes.agendaItems {
             blocks.append(.paragraph(.subheading, RichText(plain: item.title)))
-            blocks.append(.paragraph(.body, RichText(plain: item.summary)))
+            let paragraphs = item.summary.split(whereSeparator: \.isNewline).compactMap { nonEmpty(String($0)) }
+            for (index, paragraph) in paragraphs.enumerated() {
+                if index > 0 { blocks.append(.emptyParagraph) }
+                blocks.append(.paragraph(.body, RichText(plain: paragraph)))
+            }
         }
 
         // 4. Decisions.
         blocks.append(.paragraph(.heading, RichText(plain: labels.decisions)))
         blocks += bulletList(minutes.decisions, none: labels.none)
 
-        // 5. Action items, as a checklist. Missing owners and dates get a placeholder, never a guess.
+        // 5. Action items, as a checklist. A missing owner gets a placeholder, never a guess.
+        // The due date is optional and simply left out.
         blocks.append(.paragraph(.heading, RichText(plain: labels.actionItems)))
         if minutes.actionItems.isEmpty {
             blocks.append(.paragraph(.body, RichText(plain: labels.none)))
         }
         for item in minutes.actionItems {
             let owner = nonEmpty(item.owner) ?? labels.missingOwner
-            let dueDate = nonEmpty(item.dueDate) ?? labels.missingDueDate
-            blocks.append(.listItem(ListItem(kind: .checklist, text: RichText(plain: "\(item.task) – \(owner), \(dueDate)"))))
+            let dueDate = nonEmpty(item.dueDate).map { ", \($0)" } ?? ""
+            blocks.append(.listItem(ListItem(kind: .checklist, text: RichText(plain: "\(item.task) – \(owner)\(dueDate)"))))
         }
         return NoteDocument(blocks: blocks)
     }

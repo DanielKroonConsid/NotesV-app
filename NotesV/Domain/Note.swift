@@ -3,6 +3,8 @@ import Foundation
 struct NoteFolder: Identifiable, Hashable, Sendable {
     enum Kind: Hashable, Sendable {
         case regular
+        case meetingProtocols
+        case sent
         case recentlyDeleted
     }
 
@@ -10,13 +12,23 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
     static let defaultName = "Notes"
     /// The name of the folder that deleted notes are moved to.
     static let recentlyDeletedName = "Recently Deleted"
+    /// The name of the folder that generated meeting protocols are stored in.
+    static let meetingProtocolsName = "Meeting Protocols"
+    /// The view that collects all sent notes. It isn't a directory, and sent notes stay in their
+    /// folder on disk. The leading dot can't clash with a real folder, which never has one.
+    static let sent = NoteFolder(name: ".sent")
 
     /// A folder is identified by its name, which is also its directory name in storage.
     var id: String { name }
     var name: String
 
     var kind: Kind {
-        name == Self.recentlyDeletedName ? .recentlyDeleted : .regular
+        switch name {
+        case Self.recentlyDeletedName: .recentlyDeleted
+        case Self.meetingProtocolsName: .meetingProtocols
+        case Self.sent.name: .sent
+        default: .regular
+        }
     }
 }
 
@@ -28,6 +40,10 @@ struct Note: Identifiable, Hashable, Sendable {
     var isPinned: Bool
     /// The meeting the note was written for.
     var meeting: MeetingDetails?
+    /// For a meeting protocol: the note it is attached to.
+    var sourceNoteID: UUID?
+    /// When the user marked the note as sent. `nil` if it isn't marked.
+    var sentAt: Date?
     var document: NoteDocument
 
     init(
@@ -37,6 +53,8 @@ struct Note: Identifiable, Hashable, Sendable {
         modified: Date = .nowWholeSeconds,
         isPinned: Bool = false,
         meeting: MeetingDetails? = nil,
+        sourceNoteID: UUID? = nil,
+        sentAt: Date? = nil,
         document: NoteDocument = .newNote
     ) {
         self.id = id
@@ -45,6 +63,8 @@ struct Note: Identifiable, Hashable, Sendable {
         self.modified = modified
         self.isPinned = isPinned
         self.meeting = meeting
+        self.sourceNoteID = sourceNoteID
+        self.sentAt = sentAt
         self.document = document
     }
 
@@ -57,6 +77,11 @@ struct Note: Identifiable, Hashable, Sendable {
     /// A note with only a meeting is worth keeping, so it isn't discarded as empty.
     var hasContent: Bool {
         document.hasContent || meeting != nil
+    }
+
+    /// A protocol needs written notes to work from, and isn't made from another protocol.
+    var canGenerateProtocol: Bool {
+        document.hasContent && sourceNoteID == nil
     }
 
     func matches(searchText: String) -> Bool {

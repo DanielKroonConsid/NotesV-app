@@ -172,11 +172,14 @@ struct MarkdownCodecTests {
                 attendees: ["Ek, Ada", "Bo \"B\" Berg"],
                 agenda: "Release\nBudget # 2"
             ),
+            sourceNoteID: UUID(),
+            sentAt: Date(timeIntervalSince1970: 1_800_001_200),
             document: NoteDocument(blocks: [.paragraph(.title, "Weekly sync"), .paragraph(.body, "Notes")])
         )
         let decoded = MarkdownCodec.decode(MarkdownCodec.encode(note))
         #expect(decoded.fields == FrontMatter.Fields(
-            id: note.id, created: note.created, modified: note.modified, isPinned: true, meeting: note.meeting
+            id: note.id, created: note.created, modified: note.modified, isPinned: true, meeting: note.meeting,
+            sourceNoteID: note.sourceNoteID, sentAt: note.sentAt
         ))
         #expect(decoded.document == note.document)
     }

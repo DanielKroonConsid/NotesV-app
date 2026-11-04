@@ -23,12 +23,20 @@ struct NoteEditorView: NSViewRepresentable {
         coordinator.onChange = onChange
         guard let textView = coordinator.textView else { return }
 
-        textView.headerText = note.modified.formatted(date: .long, time: .shortened)
+        let modified = note.modified.formatted(date: .long, time: .shortened)
+        textView.headerText = note.sentAt.map { sentAt in
+            let sent = sentAt.formatted(date: .abbreviated, time: .shortened)
+            return String(localized: "\(modified) · Sent \(sent)")
+        } ?? modified
 
-        // Only reload when another note is shown. Edits flow from the text view to the store, not back.
-        guard coordinator.noteID != note.id else { return }
+        // Reload for another note, or when the same note was edited in another window.
+        // This view's own edits are already in `lastDocument`, so typing never reloads.
+        guard coordinator.noteID != note.id || coordinator.lastDocument != note.document else { return }
+        let isNewNote = coordinator.noteID != note.id
         coordinator.noteID = note.id
+        coordinator.lastDocument = note.document
         textView.load(note.document)
+        guard isNewNote else { return }
         if focusOnLoad {
             DispatchQueue.main.async {
                 textView.window?.makeFirstResponder(textView)
@@ -39,11 +47,14 @@ struct NoteEditorView: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextViewDelegate {
         weak var textView: NotesTextView?
         var noteID: UUID?
+        var lastDocument: NoteDocument?
         var onChange: (NoteDocument) -> Void = { _ in }
 
         func textDidChange(_ notification: Notification) {
             guard let textStorage = textView?.textStorage else { return }
-            onChange(AttributedStringConverter.document(from: textStorage))
+            let document = AttributedStringConverter.document(from: textStorage)
+            lastDocument = document
+            onChange(document)
         }
     }
 }

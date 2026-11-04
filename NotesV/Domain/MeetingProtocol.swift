@@ -51,6 +51,13 @@ struct MeetingProtocol: Hashable, Sendable, Codable {
         actionItems = try container.decodeIfPresent([ActionItem].self, forKey: .actionItems) ?? []
     }
 
+    /// The people an action item can be assigned to: everyone the meeting or the protocol mentions.
+    func ownerCandidates(for meeting: MeetingDetails) -> [String] {
+        var seen = Set<String>()
+        let names = meeting.attendees + [meeting.organizer] + attendeesPresent + attendeesAbsent + actionItems.compactMap(\.owner)
+        return names.filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+
     /// The JSON schema of this structure, in the strict form OpenAI-style structured outputs require:
     /// every property is required, optional values are nullable, and no extra properties are allowed.
     static let jsonSchema: JSONValue = [
