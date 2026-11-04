@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @Environment(NoteStore.self) private var store
     @Environment(ProtocolGenerationModel.self) private var protocolGeneration
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         @Bindable var store = store
@@ -39,6 +40,11 @@ struct ContentView: View {
                 GenerateProtocolSheet(note: note)
             }
         }
+        .onChange(of: protocolGeneration.createdProtocolID) { _, noteID in
+            guard let noteID else { return }
+            openWindow(id: ProtocolWindowView.windowID, value: noteID)
+            protocolGeneration.createdProtocolID = nil
+        }
         .alert(
             "Protocol created",
             isPresented: Binding(
@@ -72,8 +78,11 @@ struct NoteDetailView: View {
     var body: some View {
         Group {
             if let note = store.selectedNote {
-                NoteEditorView(note: note, focusOnLoad: store.noteToFocus == note.id) { document in
-                    store.updateDocument(document, of: note.id)
+                VStack(spacing: 0) {
+                    NoteAttachmentsBar(note: note)
+                    NoteEditorView(note: note, focusOnLoad: store.noteToFocus == note.id) { document in
+                        store.updateDocument(document, of: note.id)
+                    }
                 }
             } else {
                 Text("No Note Selected")
@@ -106,6 +115,7 @@ struct NoteDetailView: View {
                     Label("Table", systemImage: "tablecells")
                 }
                 .help(Text("Table"))
+                SentButton(note: store.selectedNote)
                 Button {
                     if let note = store.selectedNote {
                         protocolGeneration.requestProtocol(for: note)
@@ -114,7 +124,7 @@ struct NoteDetailView: View {
                     Label("Generate Protocol", systemImage: "sparkles")
                 }
                 .help(Text("Generate a meeting protocol from this note"))
-                .disabled(store.selectedNote?.document.hasContent != true)
+                .disabled(store.selectedNote?.canGenerateProtocol != true)
             }
         }
         .disabled(store.selectedNote == nil)

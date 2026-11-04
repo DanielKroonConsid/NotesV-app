@@ -254,10 +254,37 @@ struct ProtocolFormatterTests {
         }
         #expect(headings == ["Mötesinformation", "Deltagare", "Agenda och diskussion", "Beslut", "Åtgärdspunkter"])
         #expect(document.blocks.contains(.paragraph(.body, "Inga noterade")))
-        #expect(document.blocks.last == .listItem(ListItem(kind: .checklist, text: "Skriv notes – Bo, [Datum saknas]")))
+        #expect(document.blocks.last == .listItem(ListItem(kind: .checklist, text: "Skriv notes – Bo")))
         #expect(document.blocks.contains(.listItem(ListItem(kind: .bulleted, text: RichText([
             TextRun("Plats:", style: .bold), TextRun(" Rum 1"),
         ])))))
+    }
+
+    @Test func showsADueDateOnlyWhenThereIsOne() {
+        let minutes = MeetingProtocol(language: "en", actionItems: [
+            .init(task: "A", owner: nil, dueDate: "2026-11-20"), .init(task: "B", owner: "Bo", dueDate: " "),
+        ])
+        let blocks = ProtocolFormatter.document(for: minutes, meeting: MeetingDetails(title: "Sync", start: .now)).blocks
+        #expect(blocks.suffix(2) == [
+            .listItem(ListItem(kind: .checklist, text: "A – [Owner missing], 2026-11-20")),
+            .listItem(ListItem(kind: .checklist, text: "B – Bo")),
+        ])
+    }
+
+    @Test func splitsSummariesIntoParagraphs() {
+        let minutes = MeetingProtocol(language: "en", agendaItems: [.init(title: "T", summary: "One.\n\nTwo.\n")])
+        let blocks = ProtocolFormatter.document(for: minutes, meeting: MeetingDetails(title: "Sync", start: .now)).blocks
+        let start = blocks.firstIndex(of: .paragraph(.subheading, "T"))! + 1
+        #expect(Array(blocks[start..<start + 3]) == [.paragraph(.body, "One."), .emptyParagraph, .paragraph(.body, "Two.")])
+    }
+
+    @Test func listsEveryoneAsOwnerCandidates() {
+        let meeting = MeetingDetails(title: "Sync", start: .now, organizer: "Ada", attendees: ["Ada", "Bo"])
+        let minutes = MeetingProtocol(
+            language: "en", attendeesPresent: ["Bo", "Cia"], attendeesAbsent: ["Dan"],
+            actionItems: [.init(task: "T", owner: "Eva", dueDate: nil)]
+        )
+        #expect(minutes.ownerCandidates(for: meeting) == ["Ada", "Bo", "Cia", "Dan", "Eva"])
     }
 
     @Test func usesEnglishForOtherLanguages() {

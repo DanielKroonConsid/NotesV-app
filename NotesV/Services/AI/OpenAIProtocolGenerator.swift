@@ -82,9 +82,10 @@ struct OpenAIProtocolGenerator: ProtocolGenerator {
         - Write in \(languageRule). Set "language" to the ISO 639-1 code of that language.
         - attendeesPresent: the people the notes say attended. If the notes don't say, use the invited attendees.
         - attendeesAbsent: only people the notes say were absent.
-        - agendaItems: one item per topic. Follow the meeting agenda if there is one, otherwise group the notes into topics. Write each summary as 1–4 full sentences.
+        - agendaItems: one item per topic. Follow the meeting agenda if there is one, otherwise group the notes into topics. Prefer several focused items over one long item.
+        - summary: short and easy to scan. At most 3 sentences per paragraph. Separate paragraphs with a newline.
         - decisions: one sentence per decision that the notes record.
-        - actionItems: concrete tasks from the notes. Use null for an owner or due date that the notes don't state.
+        - actionItems: concrete tasks from the notes. Use null for an owner or due date that the notes don't state. For an owner, use the person's full name from the meeting details when it is clear who is meant.
         """
         if mode != .jsonSchema {
             let schema = (try? JSONEncoder().encode(MeetingProtocol.jsonSchema)).map { String(decoding: $0, as: UTF8.self) } ?? ""

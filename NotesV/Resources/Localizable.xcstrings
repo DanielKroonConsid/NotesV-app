@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ · Sent %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Skickad %@"
+          }
+        }
+      }
+    },
     "A folder named “%@” already exists.": {
       "localizations": {
         "sv": {
@@ -81,6 +91,16 @@
         }
       }
     },
+    "Attached to “%@”": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilaga till ”%@”"
+          }
+        }
+      }
+    },
     "Attendees": {
       "localizations": {
         "sv": {
@@ -151,6 +171,26 @@
         }
       }
     },
+    "Choose owner": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj ansvarig"
+          }
+        }
+      }
+    },
+    "Choose who is responsible for each action item. The due date is optional.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj vem som ansvarar för varje åtgärdspunkt. Datum är valfritt."
+          }
+        }
+      }
+    },
     "Clear": {
       "localizations": {
         "sv": {
@@ -177,6 +217,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ansluten. %lld modeller finns."
+          }
+        }
+      }
+    },
+    "Copy for Email": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiera för e-post"
+          }
+        }
+      }
+    },
+    "Copy the whole protocol, ready to paste into an email": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiera hela protokollet, klart att klistra in i ett mejl"
           }
         }
       }
@@ -217,6 +277,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skapa"
+          }
+        }
+      }
+    },
+    "Create Protocol": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skapa protokoll"
           }
         }
       }
@@ -297,6 +367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vill du radera anteckningen permanent?"
+          }
+        }
+      }
+    },
+    "Due date": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datum"
           }
         }
       }
@@ -471,12 +551,62 @@
         }
       }
     },
+    "Mark as Not Sent": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera som inte skickad"
+          }
+        }
+      }
+    },
+    "Mark as Sent": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera som skickad"
+          }
+        }
+      }
+    },
+    "Match Owners": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Matcha ansvariga"
+          }
+        }
+      }
+    },
     "Meeting": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Möte"
+          }
+        }
+      }
+    },
+    "Meeting Protocol": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mötesprotokoll"
+          }
+        }
+      }
+    },
+    "Meeting Protocols": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mötesprotokoll"
           }
         }
       }
@@ -601,6 +731,16 @@
         }
       }
     },
+    "No owner": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ingen ansvarig"
+          }
+        }
+      }
+    },
     "Notes": {
       "localizations": {
         "sv": {
@@ -661,6 +801,16 @@
         }
       }
     },
+    "Open the protocol": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna protokollet"
+          }
+        }
+      }
+    },
     "OpenAI-compatible API": {
       "localizations": {
         "sv": {
@@ -697,6 +847,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Annan OpenAI-kompatibel server"
+          }
+        }
+      }
+    },
+    "Owner": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ansvarig"
           }
         }
       }
@@ -847,6 +1007,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sök"
+          }
+        }
+      }
+    },
+    "Sent": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skickad"
+          }
+        }
+      }
+    },
+    "Sent Notes": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skickade"
           }
         }
       }
@@ -1117,6 +1297,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Det här är ett återkommande möte. Filen anger det första tillfället, så kontrollera datumet."
+          }
+        }
+      }
+    },
+    "This protocol no longer exists.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protokollet finns inte längre."
           }
         }
       }

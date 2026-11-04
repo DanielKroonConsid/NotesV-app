@@ -70,7 +70,7 @@ final class NoteStore {
     var visibleNotes: [Note] {
         let candidates = isSearching
             ? notes.values.filter { $0.folderID != NoteFolder.recentlyDeletedName && $0.matches(searchText: searchText) }
-            : notes.values.filter { $0.folderID == selectedFolderID }
+            : notes.values.filter { isNote($0, in: selectedFolderID) }
         return candidates.sorted { lhs, rhs in
             lhs.modified != rhs.modified ? lhs.modified > rhs.modified : lhs.id.uuidString < rhs.id.uuidString
         }
@@ -100,7 +100,24 @@ final class NoteStore {
     }
 
     func noteCount(in folderID: NoteFolder.ID) -> Int {
-        notes.values.filter { $0.folderID == folderID }.count
+        notes.values.filter { isNote($0, in: folderID) }.count
+    }
+
+    /// The folders in the sidebar: the stored folders plus the Sent view.
+    var sidebarFolders: [NoteFolder] {
+        let deletedIndex = folders.firstIndex { $0.kind == .recentlyDeleted } ?? folders.endIndex
+        var result = folders
+        result.insert(.sent, at: deletedIndex)
+        return result
+    }
+
+    /// Sent notes are only listed in the Sent view, or in Recently Deleted once they are deleted.
+    private func isNote(_ note: Note, in folderID: NoteFolder.ID?) -> Bool {
+        let isDeleted = note.folderID == NoteFolder.recentlyDeletedName
+        if folderID == NoteFolder.sent.id {
+            return note.sentAt != nil && !isDeleted
+        }
+        return note.folderID == folderID && (note.sentAt == nil || isDeleted)
     }
 
     private var defaultFolderID: NoteFolder.ID? {
@@ -139,18 +156,29 @@ final class NoteStore {
         selectedNoteID = note.id
     }
 
-    /// Adds a finished note, e.g. a generated protocol, saves it and selects it.
-    func addNote(_ note: Note) {
+    /// Stores a generated protocol in the Meeting Protocols folder. The selection stays on the source note.
+    func addProtocol(_ note: Note) {
         var note = note
-        if note.folderID == NoteFolder.recentlyDeletedName || !folders.contains(where: { $0.id == note.folderID }),
-           let defaultFolderID {
-            note.folderID = defaultFolderID
-        }
+        note.folderID = NoteFolder.meetingProtocolsName
         notes[note.id] = note
-        searchText = ""
-        selectedFolderID = note.folderID
-        selectedNoteID = note.id
+        ensureFolder(named: NoteFolder.meetingProtocolsName)
         scheduleSave(note.id)
+    }
+
+    /// The protocols attached to a note, newest first.
+    func attachments(of noteID: UUID) -> [Note] {
+        notes.values
+            .filter { $0.sourceNoteID == noteID && $0.folderID != NoteFolder.recentlyDeletedName }
+            .sorted { $0.created > $1.created }
+    }
+
+    /// Shows a note in the main window.
+    func reveal(_ noteID: UUID) {
+        guard let note = notes[noteID] else { return }
+        searchText = ""
+        let isDeleted = note.folderID == NoteFolder.recentlyDeletedName
+        selectedFolderID = note.sentAt != nil && !isDeleted ? NoteFolder.sent.id : note.folderID
+        selectedNoteID = noteID
     }
 
     func updateDocument(_ document: NoteDocument, of noteID: UUID) {
@@ -173,6 +201,17 @@ final class NoteStore {
 
     func togglePin(_ noteID: UUID) {
         notes[noteID]?.isPinned.toggle()
+        scheduleSave(noteID)
+    }
+
+    /// Marks a note as sent now, or removes the marking. Either way the note leaves the current list.
+    func toggleSent(_ noteID: UUID) {
+        if selectedNoteID == noteID, !isSearching {
+            selectNeighbor(of: noteID)
+        }
+        guard var note = notes[noteID] else { return }
+        note.sentAt = note.sentAt == nil ? .nowWholeSeconds : nil
+        notes[noteID] = note
         scheduleSave(noteID)
     }
 
@@ -202,10 +241,7 @@ final class NoteStore {
         }
         notes[noteID]?.folderID = NoteFolder.recentlyDeletedName
         notes[noteID]?.isPinned = false
-        if !folders.contains(where: { $0.kind == .recentlyDeleted }) {
-            folders.append(NoteFolder(name: NoteFolder.recentlyDeletedName))
-            sortFolders()
-        }
+        ensureFolder(named: NoteFolder.recentlyDeletedName)
         scheduleSave(noteID)
     }
 
@@ -269,9 +305,7 @@ final class NoteStore {
                     discard(note.id)
                 }
             }
-            if !folders.contains(where: { $0.kind == .recentlyDeleted }) {
-                folders.append(NoteFolder(name: NoteFolder.recentlyDeletedName))
-            }
+            ensureFolder(named: NoteFolder.recentlyDeletedName)
             do {
                 try await storage.deleteFolder(folderID)
                 folders.removeAll { $0.id == folderID }
@@ -363,11 +397,22 @@ final class NoteStore {
         }
     }
 
+    /// Shows a system folder in the sidebar. `StorageService.save` creates its directory.
+    private func ensureFolder(named name: String) {
+        guard !folders.contains(where: { $0.name == name }) else { return }
+        folders.append(NoteFolder(name: name))
+        sortFolders()
+    }
+
     private func sortFolders() {
         folders.sort { lhs, rhs in
             func rank(_ folder: NoteFolder) -> Int {
-                if folder.kind == .recentlyDeleted { return 2 }
-                return folder.name == NoteFolder.defaultName ? 0 : 1
+                switch folder.kind {
+                case .recentlyDeleted: return 4
+                case .sent: return 3
+                case .meetingProtocols: return 2
+                case .regular: return folder.name == NoteFolder.defaultName ? 0 : 1
+                }
             }
             if rank(lhs) != rank(rhs) { return rank(lhs) < rank(rhs) }
             return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending

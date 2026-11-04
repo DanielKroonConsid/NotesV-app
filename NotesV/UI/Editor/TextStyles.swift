@@ -93,28 +93,28 @@ enum NotesTextStyle {
     static func paragraphStyle(for paragraph: ParagraphAttributes, textBlocks: [NSTextBlock] = []) -> NSParagraphStyle {
         let style = NSMutableParagraphStyle()
         style.textBlocks = textBlocks
-        style.lineHeightMultiple = 1.08
+        style.lineHeightMultiple = 1.18
         switch paragraph.kind {
         case .style(.title):
-            style.paragraphSpacing = 6
+            style.paragraphSpacing = 8
         case .style(.heading):
-            style.paragraphSpacingBefore = 4
-            style.paragraphSpacing = 4
+            style.paragraphSpacingBefore = 14
+            style.paragraphSpacing = 6
         case .style(.subheading):
-            style.paragraphSpacingBefore = 2
-            style.paragraphSpacing = 2
+            style.paragraphSpacingBefore = 10
+            style.paragraphSpacing = 4
         case .style(.monostyled):
             style.headIndent = monostyledInset
             style.firstLineHeadIndent = monostyledInset
             style.tailIndent = -monostyledInset
         case .style(.body):
-            style.paragraphSpacing = 2
+            style.paragraphSpacing = 4
         case .list(let kind):
             let markerWidth = kind == .checklist ? checklistMarkerWidth : listMarkerWidth
             let indent = CGFloat(paragraph.level) * listIndentPerLevel + markerWidth
             style.headIndent = indent
             style.firstLineHeadIndent = indent
-            style.paragraphSpacing = kind == .checklist ? 4 : 2
+            style.paragraphSpacing = kind == .checklist ? 6 : 3
         }
         return style
     }

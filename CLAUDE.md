@@ -45,6 +45,7 @@ Replicate these Notes features:
 - **Text styles:** Title, Heading, Subheading, Body, Monostyled. Bold, italic, underline, strikethrough.
 - **Lists:** bulleted, dashed and numbered lists, plus **checklists** you can tick off.
 - **Tables**, **pinned notes** and **full-text search**.
+- **Paste from Apple Notes:** rich text on the clipboard becomes a note (`UI/Editor/RichPasteImporter`). Paragraph styles are worked out from font sizes and lists, and images are left out.
 - Use system fonts (SF Pro), system colors and native controls so the app follows light/dark mode and accessibility settings like Notes does.
 - Mirror Notes' keyboard shortcuts (e.g. ⇧⌘T Title, ⇧⌘H Heading, ⇧⌘J Subheading, ⇧⌘B Body, ⇧⌘L Checklist, ⇧⌘7 bulleted list).
 
@@ -54,10 +55,14 @@ Input: the meeting details plus the user's bullet points. Output: a formatted no
 2. **Attendees:** present and absent
 3. **Agenda & discussion:** a summary for each agenda item
 4. **Decisions:** a clear list
-5. **Action items:** a checklist with owner and due date
+5. **Action items:** a checklist with owner and an optional due date. The user matches owners in a dialog before the protocol is created.
+
+The protocol is an **attachment** to the note it was made from:
+- It is stored as its own note in the **Meeting Protocols** folder, linked by `sourceNote` in the front matter. The source note is never changed.
+- The source note lists its protocols above the editor. Clicking one opens it in its own window, where it can be edited and is saved automatically.
 
 The generated protocol must use the app's own rich-text styles (headings, lists, checklists), so the user can keep editing it like any other note.
-Never invent decisions, owners or dates that aren't in the input. Leave a clear placeholder instead.
+Never invent decisions, owners or dates that aren't in the input. A missing owner gets a clear placeholder; a missing due date is simply left out.
 Both AI providers must produce the same structure. Ask for structured output (e.g. JSON matching a shared schema) and convert it to rich text in the app, rather than relying on each provider's free-text formatting.
 
 ## Storage
@@ -93,6 +98,8 @@ id: 3F2504E0-4F89-11D3-9A0C-0305E82C3301
 created: 2026-10-20T09:00:00Z
 modified: 2026-10-20T09:45:00Z
 pinned: false
+sourceNote: 7B1C2D3E-1111-4222-8333-944455566677   # Only on protocols: the note it is attached to
+sent: 2026-10-20T11:00:00Z   # Only on notes the user marked as sent
 meeting:
   eventId: "AAMkAG…"      # Graph event ID; left out for meetings from .ics files or the form
   subject: "Weekly sync"

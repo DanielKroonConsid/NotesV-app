@@ -132,6 +132,8 @@ actor LocalStorageService: StorageService {
             modified: decoded.fields?.modified ?? fileModified,
             isPinned: decoded.fields?.isPinned ?? false,
             meeting: decoded.fields?.meeting,
+            sourceNoteID: decoded.fields?.sourceNoteID,
+            sentAt: decoded.fields?.sentAt,
             document: decoded.document
         )
     }
