@@ -1,12 +1,5 @@
 import Foundation
 
-/// A link from a note to the Outlook meeting it was written for.
-struct MeetingReference: Hashable, Sendable {
-    var eventID: String
-    var subject: String
-    var start: Date
-}
-
 struct NoteFolder: Identifiable, Hashable, Sendable {
     enum Kind: Hashable, Sendable {
         case regular
@@ -33,7 +26,8 @@ struct Note: Identifiable, Hashable, Sendable {
     var created: Date
     var modified: Date
     var isPinned: Bool
-    var meeting: MeetingReference?
+    /// The meeting the note was written for.
+    var meeting: MeetingDetails?
     var document: NoteDocument
 
     init(
@@ -42,7 +36,7 @@ struct Note: Identifiable, Hashable, Sendable {
         created: Date = .nowWholeSeconds,
         modified: Date = .nowWholeSeconds,
         isPinned: Bool = false,
-        meeting: MeetingReference? = nil,
+        meeting: MeetingDetails? = nil,
         document: NoteDocument = .newNote
     ) {
         self.id = id
@@ -54,10 +48,22 @@ struct Note: Identifiable, Hashable, Sendable {
         self.document = document
     }
 
+    /// The first line of the note, or the meeting title if the note has no text yet.
+    var title: String {
+        let title = document.title
+        return title.isEmpty ? meeting?.title ?? "" : title
+    }
+
+    /// A note with only a meeting is worth keeping, so it isn't discarded as empty.
+    var hasContent: Bool {
+        document.hasContent || meeting != nil
+    }
+
     func matches(searchText: String) -> Bool {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return true }
-        return document.plainText.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil
+        let searchable = [document.plainText, meeting?.title ?? ""]
+        return searchable.contains { $0.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil }
     }
 }
 

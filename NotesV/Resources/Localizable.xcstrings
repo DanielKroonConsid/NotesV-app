@@ -51,6 +51,26 @@
         }
       }
     },
+    "Add a meeting from an .ics file, or enter it by hand": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till ett möte från en .ics-fil eller fyll i det för hand"
+          }
+        }
+      }
+    },
+    "Add meeting (.ics)": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till möte (.ics)"
+          }
+        }
+      }
+    },
     "Agenda": {
       "localizations": {
         "sv": {
@@ -117,6 +137,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Checklista"
+          }
+        }
+      }
+    },
+    "Choose .ics File…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj .ics-fil…"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rensa"
           }
         }
       }
@@ -901,6 +941,46 @@
         }
       }
     },
+    "The file contains several meetings. Choose one.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filen innehåller flera möten. Välj ett."
+          }
+        }
+      }
+    },
+    "The file doesn’t contain a calendar event.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filen innehåller ingen kalenderhändelse."
+          }
+        }
+      }
+    },
+    "The file is too large to be a calendar event.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filen är för stor för att vara en kalenderhändelse."
+          }
+        }
+      }
+    },
+    "The file’s time zone is unknown, so the time was read as local time. Check the time.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filens tidszon är okänd, så tiden lästes som lokal tid. Kontrollera tiden."
+          }
+        }
+      }
+    },
     "The folder “%@” isn’t empty.": {
       "localizations": {
         "sv": {
@@ -1027,6 +1107,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Servern svarade med ett fel (%lld): %@"
+          }
+        }
+      }
+    },
+    "This is a recurring meeting. The file gives the first occurrence, so check the date.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Det här är ett återkommande möte. Filen anger det första tillfället, så kontrollera datumet."
           }
         }
       }

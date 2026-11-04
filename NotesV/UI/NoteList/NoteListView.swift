@@ -133,7 +133,7 @@ struct NoteRowView: View {
     }
 
     private var title: Text {
-        let title = note.document.title
+        let title = note.title
         return title.isEmpty ? Text("New Note") : Text(verbatim: title)
     }
 

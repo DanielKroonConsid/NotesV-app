@@ -12,7 +12,7 @@ enum FrontMatter {
         var created: Date?
         var modified: Date?
         var isPinned: Bool?
-        var meeting: MeetingReference?
+        var meeting: MeetingDetails?
     }
 
     static let delimiter = "---"
@@ -26,12 +26,17 @@ enum FrontMatter {
             "pinned: \(note.isPinned)",
         ]
         if let meeting = note.meeting {
-            lines += [
-                "meeting:",
-                "  eventId: \(quoted(meeting.eventID))",
-                "  subject: \(quoted(meeting.subject))",
-                "  start: \(formatDate(meeting.start))",
-            ]
+            lines.append("meeting:")
+            if let eventID = meeting.eventID { lines.append("  eventId: \(quoted(eventID))") }
+            lines.append("  subject: \(quoted(meeting.title))")
+            lines.append("  start: \(formatDate(meeting.start))")
+            if let end = meeting.end { lines.append("  end: \(formatDate(end))") }
+            if !meeting.location.isEmpty { lines.append("  location: \(quoted(meeting.location))") }
+            if !meeting.organizer.isEmpty { lines.append("  organizer: \(quoted(meeting.organizer))") }
+            if !meeting.attendees.isEmpty {
+                lines.append("  attendees: [\(meeting.attendees.map(quoted).joined(separator: ", "))]")
+            }
+            if !meeting.agenda.isEmpty { lines.append("  agenda: \(quoted(meeting.agenda))") }
         }
         lines.append(delimiter)
         return lines.joined(separator: "\n") + "\n"
@@ -65,16 +70,22 @@ enum FrontMatter {
         var fields = Fields()
         var values: [String: String] = [:]
         var meetingValues: [String: String] = [:]
+        var attendees: [String] = []
         var currentMap: String?
 
         for line in lines {
             guard let colon = line.firstIndex(of: ":") else { continue }
             let isIndented = line.first == " " || line.first == "\t"
             let key = line[..<colon].trimmingCharacters(in: .whitespaces)
-            let value = parseScalar(line[line.index(after: colon)...])
+            let rawValue = line[line.index(after: colon)...]
+            let value = parseScalar(rawValue)
 
             if isIndented, currentMap == "meeting" {
-                meetingValues[key] = value
+                if key == "attendees" {
+                    attendees = parseList(rawValue)
+                } else {
+                    meetingValues[key] = value
+                }
             } else if !isIndented {
                 currentMap = value.isEmpty ? key : nil
                 values[key] = value
@@ -85,8 +96,19 @@ enum FrontMatter {
         fields.created = values["created"].flatMap(parseDate)
         fields.modified = values["modified"].flatMap(parseDate)
         fields.isPinned = values["pinned"].map { $0.lowercased() == "true" }
-        if let eventID = meetingValues["eventId"], let start = meetingValues["start"].flatMap(parseDate) {
-            fields.meeting = MeetingReference(eventID: eventID, subject: meetingValues["subject"] ?? "", start: start)
+        if let start = meetingValues["start"].flatMap(parseDate) {
+            // Older notes have an empty eventId for meetings that didn't come from Outlook.
+            let eventID = meetingValues["eventId"].flatMap { $0.isEmpty ? nil : $0 }
+            fields.meeting = MeetingDetails(
+                eventID: eventID,
+                title: meetingValues["subject"] ?? "",
+                start: start,
+                end: meetingValues["end"].flatMap(parseDate),
+                location: meetingValues["location"] ?? "",
+                organizer: meetingValues["organizer"] ?? "",
+                attendees: attendees,
+                agenda: meetingValues["agenda"] ?? ""
+            )
         }
         return fields
     }
@@ -104,6 +126,34 @@ enum FrontMatter {
             return String(trimmed[..<comment.lowerBound]).trimmingCharacters(in: .whitespaces)
         }
         return trimmed
+    }
+
+    /// Reads a list on one line: `["Ada", "Bo"]`. Items may also be unquoted.
+    private static func parseList(_ raw: Substring) -> [String] {
+        let trimmed = raw.trimmingCharacters(in: .whitespaces)
+        guard trimmed.hasPrefix("["), trimmed.hasSuffix("]") else { return [] }
+
+        var items: [String] = []
+        var current = ""
+        var isQuoted = false
+        var iterator = trimmed.dropFirst().dropLast().makeIterator()
+        while let character = iterator.next() {
+            switch character {
+            case "\\" where isQuoted:
+                current.append("\\")
+                if let next = iterator.next() { current.append(next) }
+            case "\"":
+                isQuoted.toggle()
+                current.append(character)
+            case "," where !isQuoted:
+                items.append(current)
+                current = ""
+            default:
+                current.append(character)
+            }
+        }
+        items.append(current)
+        return items.map { parseScalar($0[...]) }.filter { !$0.isEmpty }
     }
 
     private static func unquoteDouble(_ text: String) -> String {
@@ -137,6 +187,7 @@ enum FrontMatter {
             case "\\": result += "\\\\"
             case "\n": result += "\\n"
             case "\t": result += "\\t"
+            case "\r": continue
             default: result.append(character)
             }
         }

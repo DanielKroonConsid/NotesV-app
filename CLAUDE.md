@@ -5,8 +5,8 @@ Guidance for Claude Code when working in this repository.
 ## Project overview
 
 **NotesV** is a macOS note-taking app that turns a few meeting bullet points into a full meeting protocol.
-The user picks a meeting from their Outlook calendar, the app reads the meeting details from Microsoft 365,
-the user jots down short notes, and an AI provider expands them into a structured protocol.
+The user adds a meeting from an `.ics` file, jots down short notes, and an AI provider expands them into a
+structured protocol. Reading the Outlook calendar directly is postponed (see "Pick a meeting").
 
 - **Look and feel:** as close to Apple's **Notes app on macOS** as possible: layout, typography, formatting and behaviour.
 - **Platform:** **macOS only**. No Windows, iOS or cross-platform targets.
@@ -20,8 +20,9 @@ the user jots down short notes, and an AI provider expands them into a structure
 | App | Swift, SwiftUI, AppKit where needed |
 | Minimum OS | **macOS 15 Sequoia** |
 | Rich-text editor | `NSTextView` wrapped in `NSViewRepresentable` (SwiftUI's rich-text `TextEditor` needs macOS 26) |
-| Auth | MSAL for macOS (Microsoft Entra ID), multi-tenant (`organizations` authority) |
-| M365 data | Microsoft Graph REST API |
+| Meetings | `.ics` files, read by `Domain/ICSParser` |
+| Auth (postponed) | MSAL for macOS (Microsoft Entra ID), multi-tenant (`organizations` authority) |
+| M365 data (postponed) | Microsoft Graph REST API |
 | AI / protocol generation | **Microsoft 365 Copilot** (default) or any **OpenAI-compatible API** (alternative: OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio…), selectable by the user |
 | Storage | **Markdown files** in a **OneDrive folder the user picks** in Settings |
 
@@ -30,10 +31,13 @@ Call OpenAI-compatible APIs directly with `URLSession` (`Services/AI/OpenAICompa
 
 ## Core features
 
-### 1. Pick a meeting from Outlook
-- List the user's upcoming and recent meetings from their calendar (Graph `/me/calendarView`).
-- When a meeting is picked, read its **subject, date/time, organizer, attendees (required and optional) and body/agenda**.
-- Scope: **calendar event details only**. No Teams transcripts, sending email or other M365 sources unless asked.
+### 1. Pick a meeting
+**Now: `.ics` files.** The meeting field in the toolbar takes an `.ics` file, by click or drag and drop. A form in its popover corrects the details and covers meetings without a file. The details are stored on the note (`Note.meeting`).
+- Read the **title, date/time, location, organizer, attendees and description**.
+- Leave out attendees who declined, and rooms. Remove Outlook's Teams join block, so links and passcodes never reach the AI provider.
+- Treat `.ics` files as untrusted plain text. They often come from other people.
+
+**Postponed: Outlook.** MSAL sign-in and the calendar (Graph `/me/calendarView`) come later and fill in the same `MeetingDetails`. Scope: **calendar event details only**. No Teams transcripts, sending email or other M365 sources unless asked.
 
 ### 2. Take notes (Mac Notes UX)
 Replicate these Notes features:
@@ -90,9 +94,14 @@ created: 2026-10-20T09:00:00Z
 modified: 2026-10-20T09:45:00Z
 pinned: false
 meeting:
-  eventId: AAMkAG…        # Graph event ID, if the note is tied to a meeting
-  subject: Weekly sync
+  eventId: "AAMkAG…"      # Graph event ID; left out for meetings from .ics files or the form
+  subject: "Weekly sync"
   start: 2026-10-20T09:00:00Z
+  end: 2026-10-20T10:00:00Z
+  location: "Room 1"
+  organizer: "Ada Ek"
+  attendees: ["Ada Ek", "Bo Berg"]
+  agenda: "Release\nBudget"
 ---
 ```
 
@@ -135,7 +144,7 @@ Provider selection:
 
 - Keep the app split into clear layers:
   - `UI/`: SwiftUI views, the `NSTextView` editor wrapper, and Settings
-  - `Domain/`: note, folder, meeting and protocol models, `MarkdownCodec`, and formatting logic
+  - `Domain/`: note, folder, meeting and protocol models, `MarkdownCodec`, `ICSParser`, and formatting logic
   - `Services/`: `AuthService` (MSAL), `CalendarService`, `StorageService` (OneDrive), `KeychainService`, `ProtocolGenerator` and its implementations
 - Use protocols for services so they can be mocked in tests and previews.
 - Use Swift Concurrency (`async/await`, `@MainActor` for UI state) and the Observation framework (`@Observable`).

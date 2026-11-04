@@ -11,6 +11,7 @@ struct NotesVApp: App {
                 .environment(appDelegate.store)
                 .environment(appDelegate.aiSettings)
                 .environment(appDelegate.protocolGeneration)
+                .environment(appDelegate.meetingImport)
                 .frame(minWidth: 760, minHeight: 420)
         }
         .defaultSize(width: 1100, height: 700)
@@ -30,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store: NoteStore
     let aiSettings: AISettings
     let protocolGeneration = ProtocolGenerationModel()
+    let meetingImport = MeetingImportModel()
 
     override init() {
         let rootURL: URL
