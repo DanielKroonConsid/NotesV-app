@@ -53,7 +53,12 @@ Lagring och AI ligger bakom egna gränssnitt (`StorageService` och `ProtocolGene
 
 ## Fas 3: Microsoft 365
 
-### Steg 5 – Inloggning och kalender
+### Steg 5a – Möten från .ics-filer (klart 2026-11-04)
+- Fältet i verktygsfältet tar emot en `.ics`-fil, och uppgifterna sparas på anteckningen.
+- Ett formulär rättar uppgifterna och täcker möten utan fil.
+- Se [fas_3/progress.md](../fas_3/progress.md).
+
+### Steg 5b – Inloggning och kalender (uppskjutet)
 - Inloggning med Microsoft (MSAL) som fungerar för alla organisationer.
 - En vy där man väljer ett möte från Outlook-kalendern, med rubrik, tid, organisatör, deltagare och agenda.
 

@@ -2,8 +2,10 @@ import Foundation
 
 /// The facts about a meeting that the protocol is based on.
 ///
-/// Entered by hand for now. Later they will be read from the Outlook calendar.
+/// Imported from an `.ics` file or entered by hand. Later they can also be read from the Outlook calendar.
 struct MeetingDetails: Hashable, Sendable, Codable {
+    /// The Outlook event id. `nil` until the Outlook calendar is connected.
+    var eventID: String?
     var title: String
     var start: Date
     var end: Date?
@@ -12,6 +14,11 @@ struct MeetingDetails: Hashable, Sendable, Codable {
     /// The people who were invited.
     var attendees: [String] = []
     var agenda: String = ""
+
+    /// Whether nothing but the start time is filled in.
+    var isEmpty: Bool {
+        title.isEmpty && location.isEmpty && organizer.isEmpty && attendees.isEmpty && agenda.isEmpty
+    }
 }
 
 /// The language a protocol is written in.

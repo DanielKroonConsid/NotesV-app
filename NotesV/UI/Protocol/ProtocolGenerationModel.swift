@@ -7,6 +7,8 @@ import Observation
 final class ProtocolGenerationModel {
     /// The note with the meeting notes. The sheet is shown while this is set.
     var sourceNoteID: UUID?
+    /// Whether the meeting popover in the toolbar is open.
+    var isMeetingFormPresented = false
     private(set) var isGenerating = false
     var errorMessage: String?
     /// Shown after a protocol was created, e.g. when an older model had to be used.
@@ -14,8 +16,18 @@ final class ProtocolGenerationModel {
 
     @ObservationIgnored private var task: Task<Void, Never>?
 
-    func start(meeting: MeetingDetails, language: ProtocolLanguage, store: NoteStore, settings: AISettings) {
-        guard let sourceNoteID, let sourceNote = store.notes[sourceNoteID], !isGenerating else { return }
+    /// Opens the sheet, or the meeting popover if the note has no meeting title yet.
+    func requestProtocol(for note: Note) {
+        if note.meeting?.title.isEmpty == false {
+            sourceNoteID = note.id
+        } else {
+            isMeetingFormPresented = true
+        }
+    }
+
+    func start(language: ProtocolLanguage, store: NoteStore, settings: AISettings) {
+        guard let sourceNoteID, let sourceNote = store.notes[sourceNoteID], let meeting = sourceNote.meeting,
+              !isGenerating else { return }
         isGenerating = true
         errorMessage = nil
 
@@ -28,8 +40,7 @@ final class ProtocolGenerationModel {
                 )
                 let protocolNote = Note(
                     folderID: sourceNote.folderID,
-                    // A manually entered meeting has no Outlook event id yet.
-                    meeting: MeetingReference(eventID: "", subject: meeting.title, start: meeting.start),
+                    meeting: meeting,
                     document: ProtocolFormatter.document(for: result.minutes, meeting: meeting)
                 )
                 store.addNote(protocolNote)

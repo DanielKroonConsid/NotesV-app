@@ -28,7 +28,9 @@ struct NotesCommands: Commands {
             }
             .disabled(store.selectedNote == nil || store.selectedNote?.folderID == NoteFolder.recentlyDeletedName)
             Button("Generate Protocol…") {
-                protocolGeneration.sourceNoteID = store.selectedNoteID
+                if let note = store.selectedNote {
+                    protocolGeneration.requestProtocol(for: note)
+                }
             }
             .keyboardShortcut("p", modifiers: [.command, .option])
             .disabled(store.selectedNote?.document.hasContent != true)

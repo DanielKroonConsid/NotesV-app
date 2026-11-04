@@ -161,6 +161,16 @@ final class NoteStore {
         scheduleSave(noteID)
     }
 
+    /// Sets the note's meeting. A meeting with nothing filled in is removed.
+    func updateMeeting(_ meeting: MeetingDetails?, of noteID: UUID) {
+        let meeting = meeting?.isEmpty == true ? nil : meeting
+        guard var note = notes[noteID], note.meeting != meeting else { return }
+        note.meeting = meeting
+        note.modified = .nowWholeSeconds
+        notes[noteID] = note
+        scheduleSave(noteID)
+    }
+
     func togglePin(_ noteID: UUID) {
         notes[noteID]?.isPinned.toggle()
         scheduleSave(noteID)
@@ -186,7 +196,7 @@ final class NoteStore {
         if selectedNoteID == noteID {
             selectNeighbor(of: noteID)
         }
-        guard note.document.hasContent else {
+        guard note.hasContent else {
             discard(noteID)
             return
         }
@@ -251,7 +261,7 @@ final class NoteStore {
         Task {
             await flushPendingSaves()
             for note in notes.values where note.folderID == folderID {
-                if note.document.hasContent {
+                if note.hasContent {
                     notes[note.id]?.folderID = NoteFolder.recentlyDeletedName
                     notes[note.id]?.isPinned = false
                     await save(note.id)
@@ -280,7 +290,7 @@ final class NoteStore {
     /// Saves everything that is waiting to be saved and drops an empty selected note. Call before quitting.
     func prepareForTermination() async {
         await flushPendingSaves()
-        if let selectedNoteID, notes[selectedNoteID]?.document.hasContent == false {
+        if let selectedNoteID, notes[selectedNoteID]?.hasContent == false {
             notes[selectedNoteID] = nil
             try? await storage.deletePermanently(selectedNoteID)
         }
@@ -298,7 +308,7 @@ final class NoteStore {
     private func save(_ noteID: UUID) async {
         saveTasks[noteID] = nil
         // Empty notes are not saved, like in Notes.
-        guard let note = notes[noteID], note.document.hasContent else { return }
+        guard let note = notes[noteID], note.hasContent else { return }
         do {
             try await storage.save(note)
         } catch {
@@ -319,7 +329,7 @@ final class NoteStore {
         if noteToFocus == noteID {
             noteToFocus = nil
         }
-        if let note = notes[noteID], !note.document.hasContent {
+        if let note = notes[noteID], !note.hasContent {
             discard(noteID)
         }
     }

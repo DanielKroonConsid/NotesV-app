@@ -50,14 +50,14 @@ actor LocalStorageService: StorageService {
         try fileManager.createDirectory(at: folderURL, withIntermediateDirectories: true)
 
         let currentURL = fileURLs[note.id]
-        let wantedBaseName = FileNaming.sanitizedName(note.document.title)
+        let wantedBaseName = FileNaming.sanitizedName(note.title)
         let targetURL: URL
         if let currentURL,
            currentURL.deletingLastPathComponent().standardizedFileURL == folderURL.standardizedFileURL,
            FileNaming.baseName(ofNoteFileName: currentURL.lastPathComponent) == wantedBaseName {
             targetURL = currentURL
         } else {
-            targetURL = availableURL(in: folderURL, title: note.document.title, ignoring: currentURL)
+            targetURL = availableURL(in: folderURL, title: note.title, ignoring: currentURL)
         }
 
         let data = Data(MarkdownCodec.encode(note).utf8)

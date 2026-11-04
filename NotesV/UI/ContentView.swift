@@ -84,6 +84,9 @@ struct NoteDetailView: View {
             }
         }
         .toolbar {
+            ToolbarItem(placement: .navigation) {
+                MeetingToolbarField()
+            }
             ToolbarItemGroup(placement: .primaryAction) {
                 Menu {
                     FormatMenuContent(includesShortcuts: false)
@@ -104,7 +107,9 @@ struct NoteDetailView: View {
                 }
                 .help(Text("Table"))
                 Button {
-                    protocolGeneration.sourceNoteID = store.selectedNoteID
+                    if let note = store.selectedNote {
+                        protocolGeneration.requestProtocol(for: note)
+                    }
                 } label: {
                     Label("Generate Protocol", systemImage: "sparkles")
                 }

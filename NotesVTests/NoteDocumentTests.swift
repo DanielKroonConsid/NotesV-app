@@ -17,6 +17,15 @@ struct NoteDocumentTests {
         #expect(NoteDocument(blocks: []).blocks == [.emptyParagraph])
     }
 
+    @Test func aMeetingCountsAsContent() {
+        let meeting = MeetingDetails(title: "Sync", start: .now)
+        #expect(!Note(folderID: "Notes").hasContent)
+        #expect(Note(folderID: "Notes", meeting: meeting).hasContent)
+        #expect(Note(folderID: "Notes", meeting: meeting).title == "Sync")
+        #expect(MeetingDetails(title: "", start: .now).isEmpty)
+        #expect(!meeting.isEmpty)
+    }
+
     @Test func tableIsAlwaysRectangular() {
         let table = NoteTable(rows: [["a"], ["b", "c"]])
         #expect(table.columnCount == 2)

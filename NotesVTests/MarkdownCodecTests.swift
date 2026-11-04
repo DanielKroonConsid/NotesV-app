@@ -162,7 +162,16 @@ struct MarkdownCodecTests {
             created: Date(timeIntervalSince1970: 1_800_000_000),
             modified: Date(timeIntervalSince1970: 1_800_000_600),
             isPinned: true,
-            meeting: MeetingReference(eventID: "AAMkAG\"x\"", subject: "Weekly: sync", start: Date(timeIntervalSince1970: 1_800_000_000)),
+            meeting: MeetingDetails(
+                eventID: "AAMkAG\"x\"",
+                title: "Weekly: sync",
+                start: Date(timeIntervalSince1970: 1_800_000_000),
+                end: Date(timeIntervalSince1970: 1_800_003_600),
+                location: "Rum 1, plan 2",
+                organizer: "Ek, Ada",
+                attendees: ["Ek, Ada", "Bo \"B\" Berg"],
+                agenda: "Release\nBudget # 2"
+            ),
             document: NoteDocument(blocks: [.paragraph(.title, "Weekly sync"), .paragraph(.body, "Notes")])
         )
         let decoded = MarkdownCodec.decode(MarkdownCodec.encode(note))
@@ -170,6 +179,21 @@ struct MarkdownCodecTests {
             id: note.id, created: note.created, modified: note.modified, isPinned: true, meeting: note.meeting
         ))
         #expect(decoded.document == note.document)
+    }
+
+    @Test func readsNotesWithTheOlderMeetingFormat() {
+        let decoded = MarkdownCodec.decode("""
+        ---
+        pinned: false
+        meeting:
+          eventId: ""
+          subject: "Sync"
+          start: 2026-10-20T09:00:00Z
+        ---
+
+        Text
+        """)
+        #expect(decoded.fields?.meeting == MeetingDetails(title: "Sync", start: Date(timeIntervalSince1970: 1_792_486_800)))
     }
 
     @Test func writesFrontMatterInTheDocumentedFormat() {
