@@ -7,6 +7,7 @@ struct FolderSidebarView: View {
     @State private var folderBeingRenamed: NoteFolder?
     @State private var renamedFolderName = ""
     @State private var folderBeingDeleted: NoteFolder?
+    @State private var hoveredFolderID: NoteFolder.ID?
 
     var body: some View {
         @Bindable var store = store
@@ -15,7 +16,19 @@ struct FolderSidebarView: View {
             Section("On My Mac") {
                 ForEach(store.sidebarFolders) { folder in
                     FolderRow(folder: folder)
-                        .badge(store.noteCount(in: folder.id))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .onHover { isHovered in
+                            if isHovered {
+                                hoveredFolderID = folder.id
+                            } else if hoveredFolderID == folder.id {
+                                hoveredFolderID = nil
+                            }
+                        }
+                        // Unsent protocols are what needs attention; the total shows on hover.
+                        .badge(hoveredFolderID == folder.id
+                               ? store.noteCount(in: folder.id)
+                               : store.unsentProtocolCount(in: folder.id))
                         .tag(folder.id)
                         .contextMenu {
                             if folder.kind == .regular {
