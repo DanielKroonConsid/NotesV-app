@@ -231,6 +231,30 @@ struct MeetingTests {
         #expect(store.selectedNoteID == noteID)
     }
 
+    @Test func countsUnsentProtocols() async throws {
+        let (store, _) = await makeStore()
+        store.createNote()
+        let noteID = try #require(store.selectedNoteID)
+        store.updateDocument(NoteDocument(blocks: [.paragraph(.title, "Sync")]), of: noteID)
+        let text = NoteDocument(blocks: [.paragraph(.title, "Protokoll")])
+        let first = Note(folderID: "Notes", sourceNoteID: noteID, document: text)
+        let second = Note(folderID: "Notes", sourceNoteID: noteID, document: text)
+        store.addProtocol(first)
+        store.addProtocol(second)
+
+        #expect(store.unsentProtocolCount(in: NoteFolder.meetingProtocolsName) == 2)
+        // Ordinary notes don't count.
+        #expect(store.unsentProtocolCount(in: NoteFolder.defaultName) == 0)
+
+        store.toggleSent(first.id)
+        #expect(store.unsentProtocolCount(in: NoteFolder.meetingProtocolsName) == 1)
+        #expect(store.unsentProtocolCount(in: NoteFolder.sent.id) == 0)
+
+        store.deleteNote(second.id)
+        #expect(store.unsentProtocolCount(in: NoteFolder.meetingProtocolsName) == 0)
+        #expect(store.unsentProtocolCount(in: NoteFolder.recentlyDeletedName) == 0)
+    }
+
     @Test func protocolsAreNotMadeFromProtocols() {
         let text = NoteDocument(blocks: [.paragraph(.body, "Text")])
         #expect(Note(folderID: "Notes", document: text).canGenerateProtocol)

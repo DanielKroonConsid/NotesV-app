@@ -34,7 +34,7 @@
 
 ## Verifiering
 
-114 tester går igenom. De täcker:
+115 tester går igenom. De täcker:
 - `ICSParser`: Outlook-fil med Windows-tidszon och Teams-text, Kalender-fil, radfortsättningar, citerade parametrar, heldag, `DURATION`, okänd tidszon, återkommande och flera möten, ogiltig och för stor fil
 - front matter med alla mötesfält, och det äldre formatet
 - import av fil, val mellan flera möten och fil som inte går att läsa
@@ -85,6 +85,11 @@ Arbetssättet är nu: skapa en anteckning, ge den en rubrik, skapa protokollet. 
 - **Vyn Skickade:** markerade anteckningar försvinner ur sin mapp i listan och samlas i Skickade i sidofältet. Det är en vy och ingen mapp, så filen ligger kvar i sin katalog. Tas markeringen bort kommer anteckningen tillbaka. Sökning hittar även skickade anteckningar, och raderade hamnar i Nyligen raderade som vanligt.
 - **Sparas** som `sent:` i anteckningens fil, med tidpunkten då den markerades.
 - **Markeringen är manuell.** Appen vet inte om något faktiskt skickats, och Kopiera för e-post markerar inget. Ändringsdatumet påverkas inte.
+
+## Siffror i sidofältet (2026-11-04)
+
+- **Normalt** visas bara antalet oskickade protokoll, vilket i praktiken betyder mappen Mötesprotokoll. Övriga mappar visar ingen siffra.
+- **När pekaren är över en mapp** visas det totala antalet anteckningar i den.
 
 ## Kvar att göra
 

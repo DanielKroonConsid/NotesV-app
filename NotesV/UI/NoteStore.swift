@@ -103,6 +103,14 @@ final class NoteStore {
         notes.values.filter { isNote($0, in: folderID) }.count
     }
 
+    /// The protocols in a folder that haven't been marked as sent.
+    func unsentProtocolCount(in folderID: NoteFolder.ID) -> Int {
+        notes.values.filter { note in
+            note.sourceNoteID != nil && note.sentAt == nil && note.folderID == folderID
+                && folderID != NoteFolder.recentlyDeletedName
+        }.count
+    }
+
     /// The folders in the sidebar: the stored folders plus the Sent view.
     var sidebarFolders: [NoteFolder] {
         let deletedIndex = folders.firstIndex { $0.kind == .recentlyDeleted } ?? folders.endIndex
