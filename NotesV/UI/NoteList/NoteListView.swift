@@ -63,6 +63,9 @@ struct NoteListView: View {
                 store.togglePin(note.id)
             }
         }
+        Button(note.sentAt == nil ? "Mark as Sent" : "Mark as Not Sent") {
+            store.toggleSent(note.id)
+        }
         Menu("Move To") {
             ForEach(store.folders.filter { $0.kind == .regular && $0.id != note.folderID }) { folder in
                 Button(folder.name == NoteFolder.defaultName ? String(localized: "Notes") : folder.name) {
@@ -107,6 +110,35 @@ private struct SectionHeader: View {
     }
 }
 
+/// Marks the note as sent, or removes the marking.
+struct SentButton: View {
+    let note: Note?
+
+    @Environment(NoteStore.self) private var store
+
+    var body: some View {
+        let isSent = note?.sentAt != nil
+        Button {
+            if let note {
+                store.toggleSent(note.id)
+            }
+        } label: {
+            Label(isSent ? "Mark as Not Sent" : "Mark as Sent", systemImage: isSent ? "paperplane.fill" : "paperplane")
+        }
+        .help(Text(isSent ? "Mark as Not Sent" : "Mark as Sent"))
+    }
+}
+
+/// Shows that a note is marked as sent.
+struct SentMark: View {
+    var body: some View {
+        Image(systemName: "paperplane.fill")
+            .foregroundStyle(.tint)
+            .accessibilityLabel(Text("Sent"))
+            .help(Text("Sent"))
+    }
+}
+
 struct NoteRowView: View {
     let note: Note
 
@@ -120,6 +152,10 @@ struct NoteRowView: View {
                 title
                     .fontWeight(.semibold)
                     .lineLimit(1)
+                if note.sentAt != nil {
+                    Spacer(minLength: 4)
+                    SentMark()
+                }
             }
             HStack(spacing: 6) {
                 Text(verbatim: dateText)

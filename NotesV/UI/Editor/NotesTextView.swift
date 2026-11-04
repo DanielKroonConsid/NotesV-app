@@ -64,9 +64,44 @@ final class NotesTextView: NSTextView {
         needsDisplay = true
     }
 
-    // MARK: - Paste
+    // MARK: - Copy and paste
 
-    /// Only plain text is pasted, so it takes on the style where it is inserted, like in Notes.
+    /// List markers aren't part of the text, so a normal copy would lose them. This one keeps
+    /// them, and the formatting, when pasted into an email.
+    override func copy(_ sender: Any?) {
+        guard let textStorage, selectedRange().length > 0 else {
+            super.copy(sender)
+            return
+        }
+        let selection = textStorage.attributedSubstring(from: selectedRange())
+        EmailClipboard.copy(AttributedStringConverter.document(from: selection))
+    }
+
+    /// Rich text is pasted as a note, which keeps the structure of text copied from Apple Notes.
+    /// Text without formatting, and anything pasted into a table cell, takes on the style around it.
+    override func paste(_ sender: Any?) {
+        guard tableCell(at: selectedRange().location) == nil,
+              let document = RichPasteImporter.document(from: .general) else {
+            super.paste(sender)
+            return
+        }
+        insert(document)
+    }
+
+    /// Replaces the selection with a whole note. `insertText` isn't used here, because it applies
+    /// the current typing font to everything it inserts.
+    func insert(_ document: NoteDocument) {
+        guard let textStorage else { return }
+        let text = AttributedStringConverter.attributedString(from: document)
+        let range = selectedRange()
+        guard shouldChangeText(in: range, replacementString: text.string) else { return }
+        textStorage.replaceCharacters(in: range, with: text)
+        didChangeText()
+        setSelectedRange(NSRange(location: range.location + text.length, length: 0))
+        scrollRangeToVisible(selectedRange())
+    }
+
+    /// Drag and drop, and Paste and Match Style, stay plain text.
     override var readablePasteboardTypes: [NSPasteboard.PasteboardType] {
         [.string]
     }

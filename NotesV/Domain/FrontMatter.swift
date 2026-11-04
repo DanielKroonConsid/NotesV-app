@@ -13,6 +13,8 @@ enum FrontMatter {
         var modified: Date?
         var isPinned: Bool?
         var meeting: MeetingDetails?
+        var sourceNoteID: UUID?
+        var sentAt: Date?
     }
 
     static let delimiter = "---"
@@ -25,6 +27,12 @@ enum FrontMatter {
             "modified: \(formatDate(note.modified))",
             "pinned: \(note.isPinned)",
         ]
+        if let sourceNoteID = note.sourceNoteID {
+            lines.append("sourceNote: \(sourceNoteID.uuidString)")
+        }
+        if let sentAt = note.sentAt {
+            lines.append("sent: \(formatDate(sentAt))")
+        }
         if let meeting = note.meeting {
             lines.append("meeting:")
             if let eventID = meeting.eventID { lines.append("  eventId: \(quoted(eventID))") }
@@ -96,6 +104,8 @@ enum FrontMatter {
         fields.created = values["created"].flatMap(parseDate)
         fields.modified = values["modified"].flatMap(parseDate)
         fields.isPinned = values["pinned"].map { $0.lowercased() == "true" }
+        fields.sourceNoteID = values["sourceNote"].flatMap(UUID.init(uuidString:))
+        fields.sentAt = values["sent"].flatMap(parseDate)
         if let start = meetingValues["start"].flatMap(parseDate) {
             // Older notes have an empty eventId for meetings that didn't come from Outlook.
             let eventID = meetingValues["eventId"].flatMap { $0.isEmpty ? nil : $0 }

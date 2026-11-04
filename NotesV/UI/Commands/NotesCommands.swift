@@ -27,13 +27,20 @@ struct NotesCommands: Commands {
                 }
             }
             .disabled(store.selectedNote == nil || store.selectedNote?.folderID == NoteFolder.recentlyDeletedName)
+            Button(store.selectedNote?.sentAt == nil ? "Mark as Sent" : "Mark as Not Sent") {
+                if let noteID = store.selectedNoteID {
+                    store.toggleSent(noteID)
+                }
+            }
+            .keyboardShortcut("e", modifiers: [.command, .shift])
+            .disabled(store.selectedNote == nil)
             Button("Generate Protocol…") {
                 if let note = store.selectedNote {
                     protocolGeneration.requestProtocol(for: note)
                 }
             }
             .keyboardShortcut("p", modifiers: [.command, .option])
-            .disabled(store.selectedNote?.document.hasContent != true)
+            .disabled(store.selectedNote?.canGenerateProtocol != true)
         }
 
         CommandMenu("Format") {

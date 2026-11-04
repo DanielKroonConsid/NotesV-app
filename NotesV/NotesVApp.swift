@@ -19,6 +19,13 @@ struct NotesVApp: App {
             NotesCommands(store: appDelegate.store, protocolGeneration: appDelegate.protocolGeneration)
         }
 
+        WindowGroup("Meeting Protocol", id: ProtocolWindowView.windowID, for: UUID.self) { $noteID in
+            ProtocolWindowView(noteID: noteID)
+                .environment(appDelegate.store)
+                .frame(minWidth: 420, minHeight: 360)
+        }
+        .defaultSize(width: 680, height: 760)
+
         Settings {
             SettingsView()
                 .environment(appDelegate.aiSettings)

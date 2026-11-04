@@ -13,8 +13,14 @@ final class ProtocolGenerationModel {
     var errorMessage: String?
     /// Shown after a protocol was created, e.g. when an older model had to be used.
     var warning: String?
+    /// A generated protocol waiting for the user to match its action items.
+    var pendingMinutes: MeetingProtocol?
+    /// A newly created protocol that should open in its own window.
+    var createdProtocolID: UUID?
 
     @ObservationIgnored private var task: Task<Void, Never>?
+    /// Held back until the sheet has closed, because an alert can't show on top of it.
+    @ObservationIgnored private var pendingWarning: String?
 
     /// Opens the sheet, or the meeting popover if the note has no meeting title yet.
     func requestProtocol(for note: Note) {
@@ -38,20 +44,41 @@ final class ProtocolGenerationModel {
                 let result = try await generator.generateProtocol(
                     meeting: meeting, notes: sourceNote.document, language: language
                 )
-                let protocolNote = Note(
-                    folderID: sourceNote.folderID,
-                    meeting: meeting,
-                    document: ProtocolFormatter.document(for: result.minutes, meeting: meeting)
-                )
-                store.addNote(protocolNote)
-                warning = result.warning
-                self.sourceNoteID = nil
+                pendingWarning = result.warning
+                pendingMinutes = result.minutes
+                if result.minutes.actionItems.isEmpty {
+                    createProtocol(store: store)
+                }
             } catch is CancellationError {
                 // The user cancelled; keep the sheet open.
             } catch {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+
+    /// Creates the protocol note from the reviewed result.
+    func createProtocol(store: NoteStore) {
+        guard let minutes = pendingMinutes, let sourceNoteID, let sourceNote = store.notes[sourceNoteID],
+              let meeting = sourceNote.meeting else { return }
+        let protocolNote = Note(
+            folderID: NoteFolder.meetingProtocolsName,
+            meeting: meeting,
+            sourceNoteID: sourceNote.id,
+            document: ProtocolFormatter.document(for: minutes, meeting: meeting)
+        )
+        store.addProtocol(protocolNote)
+        createdProtocolID = protocolNote.id
+        warning = pendingWarning
+        pendingWarning = nil
+        pendingMinutes = nil
+        self.sourceNoteID = nil
+    }
+
+    /// Throws away a generated protocol that hasn't been created yet.
+    func discardPendingProtocol() {
+        pendingMinutes = nil
+        pendingWarning = nil
     }
 
     func cancel() {

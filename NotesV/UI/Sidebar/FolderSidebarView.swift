@@ -13,7 +13,7 @@ struct FolderSidebarView: View {
 
         List(selection: $store.selectedFolderID) {
             Section("On My Mac") {
-                ForEach(store.folders) { folder in
+                ForEach(store.sidebarFolders) { folder in
                     FolderRow(folder: folder)
                         .badge(store.noteCount(in: folder.id))
                         .tag(folder.id)
@@ -83,6 +83,10 @@ private struct FolderRow: View {
         switch folder.kind {
         case .recentlyDeleted:
             Label("Recently Deleted", systemImage: "trash")
+        case .meetingProtocols:
+            Label("Meeting Protocols", systemImage: "doc.text")
+        case .sent:
+            Label("Sent Notes", systemImage: "paperplane")
         case .regular where folder.name == NoteFolder.defaultName:
             Label("Notes", systemImage: "folder")
         case .regular:

@@ -12,6 +12,19 @@ struct GenerateProtocolSheet: View {
     @State private var language = ProtocolLanguage.automatic
 
     var body: some View {
+        if let meeting = note.meeting, let minutes = model.pendingMinutes {
+            ActionItemsReview(
+                minutes: Binding(get: { model.pendingMinutes ?? minutes }, set: { model.pendingMinutes = $0 }),
+                meeting: meeting,
+                onCreate: { model.createProtocol(store: store) },
+                onCancel: { model.discardPendingProtocol() }
+            )
+        } else {
+            generateView
+        }
+    }
+
+    private var generateView: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Generate Protocol")
                 .font(.headline)
