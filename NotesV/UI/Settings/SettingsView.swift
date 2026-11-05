@@ -22,9 +22,6 @@ struct AISettingsView: View {
                 LabeledContent("Provider") {
                     Text("OpenAI-compatible API")
                 }
-                Text("Microsoft 365 Copilot will be added later.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section("Server") {
