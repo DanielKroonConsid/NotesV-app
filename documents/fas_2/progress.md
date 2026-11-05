@@ -67,6 +67,6 @@ Appen kan skapa ett mötesprotokoll från en anteckning med vilken OpenAI-kompat
 - **Provkör manuellt:**
   - mot Ollama (`http://localhost:11434/v1`)
   - mot OpenAI med en egen nyckel, som skrivs in i appen och inte i chatten
-- **Nyckelringen frågar om lov efter varje bygge.** Under utveckling signeras appen ad hoc och får en ny signatur vid varje bygge. Därför kan macOS fråga om NotesV får använda den sparade nyckeln. Det försvinner när appen signeras med ett riktigt certifikat.
+- **Nyckelringen frågade om lov efter varje bygge,** eftersom appen signerades ad hoc och fick en ny signatur varje gång. Sedan 2026-11-05 signeras appen med ett Apple Development-certifikat (Personal Team `ZVJJARSPWQ`), så signaturen är stabil. Det teamet duger inte för distribution till andra.
 - **Mötesuppgifterna fylls i för hand** tills kalendern kopplas in i steg 5.
 - **Svaret visas inte medan det skrivs (ingen strömning).** Hela svaret väntas in, och tidsgränsen är 180 sekunder.

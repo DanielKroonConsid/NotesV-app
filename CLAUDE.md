@@ -6,12 +6,14 @@ Guidance for Claude Code when working in this repository.
 
 **NotesV** is a macOS note-taking app that turns a few meeting bullet points into a full meeting protocol.
 The user adds a meeting from an `.ics` file, jots down short notes, and an AI provider expands them into a
-structured protocol. Reading the Outlook calendar directly is postponed (see "Pick a meeting").
+structured protocol.
+
+**No Microsoft Entra app.** NotesV can't be registered in Microsoft Entra, so nothing may depend on one: no MSAL sign-in, no Microsoft Graph, no Outlook calendar and no Microsoft 365 Copilot.
 
 - **Look and feel:** as close to Apple's **Notes app on macOS** as possible: layout, typography, formatting and behaviour.
 - **Platform:** **macOS only**. No Windows, iOS or cross-platform targets.
 - **Languages:** the UI is available in **Swedish and English**. Protocols are generated in the language of the user's notes unless the user picks one.
-- **Audience:** a **multi-tenant** app that works for any Microsoft 365 organization.
+- **Audience:** anyone on a Mac. The app needs no Microsoft 365 account or sign-in.
 
 ## Tech stack
 
@@ -21,23 +23,19 @@ structured protocol. Reading the Outlook calendar directly is postponed (see "Pi
 | Minimum OS | **macOS 15 Sequoia** |
 | Rich-text editor | `NSTextView` wrapped in `NSViewRepresentable` (SwiftUI's rich-text `TextEditor` needs macOS 26) |
 | Meetings | `.ics` files, read by `Domain/ICSParser` |
-| Auth (postponed) | MSAL for macOS (Microsoft Entra ID), multi-tenant (`organizations` authority) |
-| M365 data (postponed) | Microsoft Graph REST API |
-| AI / protocol generation | **Microsoft 365 Copilot** (default) or any **OpenAI-compatible API** (alternative: OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio…), selectable by the user |
-| Storage | **Markdown files** in a **OneDrive folder the user picks** in Settings |
+| AI / protocol generation | Any **OpenAI-compatible API** (OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio…), selectable by the user |
+| Storage | **Markdown files**, today in the app's container. Planned: a **folder the user picks** in Settings |
 
-Don't add third-party dependencies without asking first. Prefer Apple frameworks and the official Microsoft SDKs.
+Don't add third-party dependencies without asking first. Prefer Apple frameworks.
 Call OpenAI-compatible APIs directly with `URLSession` (`Services/AI/OpenAICompatibleClient`) rather than adding an SDK.
 
 ## Core features
 
 ### 1. Pick a meeting
-**Now: `.ics` files.** The meeting field in the toolbar takes an `.ics` file, by click or drag and drop. A form in its popover corrects the details and covers meetings without a file. The details are stored on the note (`Note.meeting`).
+Meetings come from **`.ics` files**. The meeting field in the toolbar takes an `.ics` file, by click or drag and drop. A form in its popover corrects the details and covers meetings without a file. The details are stored on the note (`Note.meeting`).
 - Read the **title, date/time, location, organizer, attendees and description**.
 - Leave out attendees who declined, and rooms. Remove Outlook's Teams join block, so links and passcodes never reach the AI provider.
 - Treat `.ics` files as untrusted plain text. They often come from other people.
-
-**Postponed: Outlook.** MSAL sign-in and the calendar (Graph `/me/calendarView`) come later and fill in the same `MeetingDetails`. Scope: **calendar event details only**. No Teams transcripts, sending email or other M365 sources unless asked.
 
 ### 2. Take notes (Mac Notes UX)
 Replicate these Notes features:
@@ -63,15 +61,16 @@ The protocol is an **attachment** to the note it was made from:
 
 The generated protocol must use the app's own rich-text styles (headings, lists, checklists), so the user can keep editing it like any other note.
 Never invent decisions, owners or dates that aren't in the input. A missing owner gets a clear placeholder; a missing due date is simply left out.
-Both AI providers must produce the same structure. Ask for structured output (e.g. JSON matching a shared schema) and convert it to rich text in the app, rather than relying on each provider's free-text formatting.
+Every AI provider must produce the same structure. Ask for structured output (e.g. JSON matching a shared schema) and convert it to rich text in the app, rather than relying on each server's free-text formatting.
 
 ## Storage
 
 ### Location
-- The user picks a **root folder in their OneDrive** in Settings, using a folder picker backed by Graph (`/me/drive`).
-- Save the folder's drive item ID, not just its path, so a rename doesn't break it. If the folder is gone, ask the user to pick a new one.
-- **App folders map to OneDrive subfolders** under the root folder. **Each note is one `.md` file.**
-- Keep a local cache so the app stays usable and fast offline. Sync when the user is back online. Changes made to the files outside the app must be detected and handled (e.g. via the drive item's eTag), not overwritten silently.
+**Today:** notes are stored in the app's container, through `StorageService`. **App folders map to subfolders**, and **each note is one `.md` file**.
+
+**Planned, not built:** the user picks a root folder in Settings with the system folder picker, for example the folder the OneDrive app syncs on this Mac. The OneDrive app then handles sync and offline copies, and NotesV never talks to OneDrive itself.
+- Save a security-scoped bookmark, so the folder survives restarts and renames. If the folder is gone, ask the user to pick a new one.
+- Changes made to the files outside the app must be detected and handled (e.g. via the modification date), not overwritten silently.
 
 ### Markdown format
 Notes are stored as **GitHub Flavored Markdown** with YAML front matter for metadata.
@@ -101,7 +100,6 @@ pinned: false
 sourceNote: 7B1C2D3E-1111-4222-8333-944455566677   # Only on protocols: the note it is attached to
 sent: 2026-10-20T11:00:00Z   # Only on notes the user marked as sent
 meeting:
-  eventId: "AAMkAG…"      # Graph event ID; left out for meetings from .ics files or the form
   subject: "Weekly sync"
   start: 2026-10-20T09:00:00Z
   end: 2026-10-20T10:00:00Z
@@ -117,12 +115,9 @@ meeting:
 
 ## AI providers
 
-All protocol generation goes through a single `ProtocolGenerator` protocol with one implementation per provider:
+All protocol generation goes through a single `ProtocolGenerator` protocol, so another provider can be added without changing the rest of the app:
 
-- **`CopilotProtocolGenerator`** (default): uses **the Copilot that comes with standard Microsoft 365 business plans** (e.g. Business Basic), through the user's M365 sign-in, with no extra Copilot add-on license.
-  - Before building this, check the current Microsoft docs to confirm an API exists for that tier. As far as we know, Microsoft's Copilot APIs have so far needed the paid **Microsoft 365 Copilot** license. If that's still true, stop and ask the user before going further.
-  - If Copilot isn't available to a user or tenant, show a clear message and offer to switch to OpenAI.
-- **`OpenAIProtocolGenerator`** (alternative): works with **any OpenAI-compatible server** through its Chat Completions API (`GET {base URL}/models`, `POST {base URL}/chat/completions`).
+- **`OpenAIProtocolGenerator`**: works with **any OpenAI-compatible server** through its Chat Completions API (`GET {base URL}/models`, `POST {base URL}/chat/completions`).
   - The user picks a preset (OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio) or enters any base URL. The key is sent as `Authorization: Bearer` or, for Azure, `api-key`.
   - **The API key is optional for local servers** (Ollama, LM Studio). **Plain `http` is only allowed for `localhost`, `127.0.0.1` and `*.local`**; everything else must use `https`. The ATS exception for this lives in `Config/NotesV-Info.plist` (`NSAllowsLocalNetworking`).
   - Ask for structured output with `response_format: json_schema` (`MeetingProtocol.jsonSchema`). If the server answers 400, fall back to `json_object`, then to plain text with the schema in the prompt, and extract the JSON from the answer.
@@ -131,28 +126,25 @@ All protocol generation goes through a single `ProtocolGenerator` protocol with 
   - Settings lets the user override this with a specific model.
   - Tell the user in the UI where meeting data is sent: outside their Microsoft 365 tenant, or, for a local server, to this Mac only.
 
-Provider selection:
+Settings:
 - A **Settings** pane (SwiftUI `Settings` scene) lets the user:
-  - choose the AI provider
   - choose the server (preset or base URL) and how the key is sent
   - enter or remove the API key
   - choose the model ("Latest" by default) and test the connection
-  - pick the OneDrive storage folder
-- Remember the provider, the model choice and the folder ID in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
+  - pick the storage folder (planned)
+- Remember the server and the model choice in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
 
 ## Security and secrets
 
-- **M365 tokens:** let MSAL handle token caching in the Keychain. Never log, print or store tokens yourself.
-- **AI API keys:** store them **only in the macOS Keychain** (one per preset, via `KeychainService`). Never in `UserDefaults`, files, logs or source code, and never sync it to OneDrive.
-- **App registration:** a multi-tenant Entra ID app. Customer admins may need to grant consent, so request the **smallest set of Graph permissions** that works: `User.Read`, `Calendars.Read` and `Files.ReadWrite`, plus whatever the Copilot API needs.
-- Never commit client secrets, real customer tenant IDs or API keys. A public client desktop app shouldn't need a client secret.
+- **AI API keys:** store them **only in the macOS Keychain** (one per preset, via `KeychainService`). Never in `UserDefaults`, files, logs or source code, and never in the notes folder.
+- Never commit API keys or other secrets.
 
 ## Architecture guidelines
 
 - Keep the app split into clear layers:
   - `UI/`: SwiftUI views, the `NSTextView` editor wrapper, and Settings
   - `Domain/`: note, folder, meeting and protocol models, `MarkdownCodec`, `ICSParser`, and formatting logic
-  - `Services/`: `AuthService` (MSAL), `CalendarService`, `StorageService` (OneDrive), `KeychainService`, `ProtocolGenerator` and its implementations
+  - `Services/`: `StorageService`, `KeychainService`, `ProtocolGenerator` and its implementations
 - Use protocols for services so they can be mocked in tests and previews.
 - Use Swift Concurrency (`async/await`, `@MainActor` for UI state) and the Observation framework (`@Observable`).
 - All user-facing strings go in a String Catalog (`Localizable.xcstrings`) with **Swedish and English**. No hard-coded UI text.
@@ -161,5 +153,5 @@ Provider selection:
 
 - Follow the Swift API Design Guidelines. Use SwiftLint/swift-format defaults if added.
 - Prefer small views and computed properties over large view bodies.
-- Write unit tests (Swift Testing) for the domain logic, Markdown round-trips, protocol formatting and service parsing, using mocked Graph and OpenAI responses (`MockTransport` replaces `HTTPTransport`). Tests must never call the real APIs.
+- Write unit tests (Swift Testing) for the domain logic, Markdown round-trips, protocol formatting and service parsing, using mocked OpenAI responses (`MockTransport` replaces `HTTPTransport`). Tests must never call the real APIs.
 - Code, comments and commit messages are in **English**.
