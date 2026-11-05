@@ -1,16 +1,18 @@
 # NotesV – byggplan
 
 **Datum:** 2026-10-23
-**Status:** Planering klar. Inget är byggt än.
+**Status:** Steg 1–4 och 5a är byggda. Reviderad 2026-11-04.
 **Miljö:** Xcode 26.5, appen ska stödja macOS 15 Sequoia och senare.
 
 Projektets krav finns i [`CLAUDE.md`](../../CLAUDE.md). Det här dokumentet beskriver i vilken ordning vi bygger appen.
 
+**Ändrat 2026-11-04:** NotesV går inte att registrera i Microsoft Entra. Därför är inloggning, Outlook och Copilot strukna, och OneDrive kan inte kopplas in via Graph.
+
 ## Princip
 
-Vi börjar med de delar som går att bygga och testa helt lokalt. Delarna som kräver Microsoft 365 kommer sist, eftersom de behöver förberedelser utanför koden (appregistrering och licenser).
+Vi bygger delar som går att bygga och testa helt lokalt, utan koppling till Microsoft 365.
 
-Lagring och AI ligger bakom egna gränssnitt (`StorageService` och `ProtocolGenerator`). Därför kan lokal lagring bytas mot OneDrive, och OpenAI kompletteras med Copilot, utan att resten av appen ändras.
+Lagring och AI ligger bakom egna gränssnitt (`StorageService` och `ProtocolGenerator`). Därför kan lagringsplatsen och AI-tjänsten bytas utan att resten av appen ändras.
 
 ## Fas 1: Grunden (helt lokalt)
 
@@ -47,40 +49,33 @@ Lagring och AI ligger bakom egna gränssnitt (`StorageService` och `ProtocolGene
 - Nyckeln sparas bara i Nyckelringen.
 - Appen väljer automatiskt den senaste OpenAI-modellen, och man kan välja en annan modell i inställningarna.
 - `OpenAIProtocolGenerator` skapar protokoll med de fem avsnitten: mötesinfo, deltagare, agenda och diskussion, beslut och åtgärdspunkter.
-- Tills kalendern är kopplad skrivs mötesuppgifterna in för hand.
 
 **Klart när:** hela flödet från mötespunkter till färdigt protokoll fungerar.
 
-## Fas 3: Microsoft 365
+## Fas 3: Möten och lagring
 
 ### Steg 5a – Möten från .ics-filer (klart 2026-11-04)
 - Fältet i verktygsfältet tar emot en `.ics`-fil, och uppgifterna sparas på anteckningen.
 - Ett formulär rättar uppgifterna och täcker möten utan fil.
 - Se [fas_3/progress.md](../fas_3/progress.md).
 
-### Steg 5b – Inloggning och kalender (uppskjutet)
-- Inloggning med Microsoft (MSAL) som fungerar för alla organisationer.
-- En vy där man väljer ett möte från Outlook-kalendern, med rubrik, tid, organisatör, deltagare och agenda.
+### Steg 5b – Inloggning och kalender (struket 2026-11-04)
+Krävde en appregistrering i Microsoft Entra, som inte går att göra. Möten kommer från `.ics`-filer och formuläret.
 
-**Klart när:** ett valt möte fyller automatiskt i mötesuppgifterna i protokollet.
-
-### Steg 6 – OneDrive
-- Man väljer en mapp i OneDrive i inställningarna.
-- Appen synkar anteckningarna mot den mappen och har en lokal kopia för när man är offline.
+### Steg 6 – Valfri lagringsmapp (föreslaget, inte beslutat)
+Den planerade kopplingen till OneDrive via Graph går inte att bygga utan appregistrering. Förslaget är i stället:
+- Man väljer en mapp på datorn i inställningarna, till exempel mappen som OneDrive-appen synkar.
+- OneDrive-appen sköter synk och offline-kopia. NotesV sparar bara filerna i mappen.
 - Appen märker om någon har ändrat en fil utanför appen, i stället för att skriva över ändringen.
+- Appen behöver skrivbehörighet för mappen som användaren väljer och måste minnas mappen mellan starter.
 
-**Klart när:** anteckningar sparas i den valda OneDrive-mappen och går att öppna även offline.
+**Klart när:** anteckningar sparas i den valda mappen och ändringar utanför appen skrivs inte över.
 
-### Steg 7 – Copilot
-- Först kontrollerar vi om det finns ett API för den Copilot som ingår i vanliga M365-abonnemang som Business Basic.
-- Om det finns bygger vi `CopilotProtocolGenerator`. Om det kräver den betalda Microsoft 365 Copilot-licensen bestämmer vi tillsammans hur vi gör.
-
-**Klart när:** Copilot fungerar som AI-tjänst, eller det finns ett beslut om alternativet.
+### Steg 7 – Copilot (struket 2026-11-04)
+Krävde användarens Microsoft-inloggning och därmed en appregistrering. OpenAI-kompatibla tjänster är den enda AI-vägen.
 
 ## Förberedelser utanför koden
 
 | Inför steg | Vad | Vem |
 |---|---|---|
 | 4 | En API-nyckel från OpenAI. Den skrivs in i appen, aldrig i chatten eller i koden. | Daniel |
-| 5 | En appregistrering i Microsoft Entra (Azure-portalen) som fungerar för alla organisationer, med behörigheterna `User.Read`, `Calendars.Read` och `Files.ReadWrite`. Claude kan skriva en steg-för-steg-guide. | Daniel, med guide från Claude |
-| 7 | Svaret från kontrollen om Copilot-API:t. | Claude kontrollerar, Daniel beslutar |

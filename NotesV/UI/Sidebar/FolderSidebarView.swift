@@ -9,6 +9,8 @@ struct FolderSidebarView: View {
     @State private var folderBeingDeleted: NoteFolder?
     @State private var hoveredFolderID: NoteFolder.ID?
 
+    private static let subfolderIndent: CGFloat = 16
+
     var body: some View {
         @Bindable var store = store
 
@@ -16,6 +18,7 @@ struct FolderSidebarView: View {
             Section("On My Mac") {
                 ForEach(store.sidebarFolders) { folder in
                     FolderRow(folder: folder)
+                        .padding(.leading, folder.isSubfolder ? Self.subfolderIndent : 0)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
                         .onHover { isHovered in

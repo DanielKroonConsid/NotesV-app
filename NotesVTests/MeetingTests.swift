@@ -219,6 +219,14 @@ struct MeetingTests {
         #expect(store.sidebarFolders.map(\.name) == [NoteFolder.defaultName, NoteFolder.sent.name, NoteFolder.recentlyDeletedName])
     }
 
+    @Test func onlyUserFoldersAreSubfolders() {
+        #expect(NoteFolder(name: "Projekt").isSubfolder)
+        #expect(!NoteFolder(name: NoteFolder.defaultName).isSubfolder)
+        #expect(!NoteFolder(name: NoteFolder.meetingProtocolsName).isSubfolder)
+        #expect(!NoteFolder(name: NoteFolder.recentlyDeletedName).isSubfolder)
+        #expect(!NoteFolder.sent.isSubfolder)
+    }
+
     @Test func revealFindsASentNote() async throws {
         let (store, _) = await makeStore()
         store.createNote()

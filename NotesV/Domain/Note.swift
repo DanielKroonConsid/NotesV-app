@@ -30,6 +30,11 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
         default: .regular
         }
     }
+
+    /// A folder the user created, which the sidebar shows under Notes.
+    var isSubfolder: Bool {
+        kind == .regular && name != Self.defaultName
+    }
 }
 
 struct Note: Identifiable, Hashable, Sendable {

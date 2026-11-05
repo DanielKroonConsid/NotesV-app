@@ -631,16 +631,6 @@
         }
       }
     },
-    "Microsoft 365 Copilot will be added later.": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Microsoft 365 Copilot läggs till senare."
-          }
-        }
-      }
-    },
     "Model": {
       "localizations": {
         "sv": {
