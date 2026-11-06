@@ -1,0 +1,66 @@
+import AppKit
+import SwiftUI
+
+/// Lets the user pick the folder the notes are stored in.
+struct StorageSettingsView: View {
+    @Environment(StorageSettings.self) private var settings
+    @Environment(NoteStore.self) private var store
+
+    var body: some View {
+        Form {
+            Section {
+                LabeledContent("Notes folder") {
+                    if let folderURL = settings.folderURL {
+                        Text(verbatim: StorageFolderBookmark.notesRoot(in: folderURL).path(percentEncoded: false))
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+                            .textSelection(.enabled)
+                    } else {
+                        Text("On this Mac")
+                    }
+                }
+
+                HStack {
+                    Button("Choose Folder…", action: chooseFolder)
+                    if settings.folderURL != nil {
+                        Button("Use This Mac") {
+                            Task { await settings.useThisMac(store: store) }
+                        }
+                    }
+                    if settings.isMoving {
+                        ProgressView().controlSize(.small)
+                    }
+                }
+                .disabled(settings.isMoving)
+
+                if settings.isFolderMissing {
+                    Label("The chosen folder can’t be found. Choose a new one.", systemImage: "exclamationmark.triangle")
+                }
+                if let errorMessage = settings.errorMessage {
+                    Label {
+                        Text(verbatim: errorMessage)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
+                }
+            } footer: {
+                Text("Choose a folder that OneDrive or another service syncs to back up your notes and reach them on other Macs. NotesV copies the notes there and leaves the old files where they are. Notes that sync leave this Mac, including meeting details.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = String(localized: "Choose")
+        panel.message = String(localized: "Choose where to store your notes. NotesV creates a folder named NotesV there.")
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        Task { await settings.useFolder(url, store: store) }
+    }
+}

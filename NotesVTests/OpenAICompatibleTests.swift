@@ -177,6 +177,31 @@ struct OpenAIProtocolGeneratorTests {
         )
     }
 
+    private func swedishAnswer(language: String) -> String {
+        #"{"language":"\#(language)","attendeesPresent":[],"attendeesAbsent":[],"agendaItems":[{"title":"Budget","summary":"Vi gick igenom budgeten och kom överens om att spara mer nästa år."}],"decisions":["Vi skjuter upp lanseringen till maj."],"actionItems":[]}"#
+    }
+
+    @Test(arguments: ["en", "Swedish", "svenska", "sv"])
+    func theProtocolTextDecidesTheLanguage(modelAnswer: String) async throws {
+        let transport = MockTransport([MockTransport.chatReply(swedishAnswer(language: modelAnswer))])
+        let result = try await makeGenerator(transport).generateProtocol(meeting: meeting, notes: notes, language: .automatic)
+
+        #expect(result.minutes.language == "sv")
+        #expect(ProtocolFormatter.title(for: meeting, languageCode: result.minutes.language) == "Protokoll – Weekly sync")
+    }
+
+    @Test func aPickedLanguageOverridesTheAnswer() async throws {
+        let transport = MockTransport([MockTransport.chatReply(swedishAnswer(language: "sv"))])
+        let result = try await makeGenerator(transport).generateProtocol(meeting: meeting, notes: notes, language: .english)
+        #expect(result.minutes.language == "en")
+    }
+
+    @Test func englishProtocolsStayEnglish() async throws {
+        let transport = MockTransport([MockTransport.chatReply(answer)])
+        let result = try await makeGenerator(transport).generateProtocol(meeting: meeting, notes: notes, language: .automatic)
+        #expect(result.minutes.language == "en")
+    }
+
     @Test func generatesAProtocol() async throws {
         let transport = MockTransport([MockTransport.chatReply(answer)])
         let result = try await makeGenerator(transport).generateProtocol(meeting: meeting, notes: notes, language: .automatic)

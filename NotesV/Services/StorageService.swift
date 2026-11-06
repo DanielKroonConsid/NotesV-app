@@ -7,13 +7,11 @@ struct NoteLibrary: Sendable {
 }
 
 /// Stores notes as Markdown files, one subfolder per app folder.
-///
-/// Phase 1 uses `LocalStorageService`. A OneDrive implementation will replace it later without
-/// changes to the rest of the app.
 protocol StorageService: Sendable {
     func loadLibrary() async throws -> NoteLibrary
 
     /// Creates or updates the note's file. Renames or moves the file if the title or folder changed.
+    /// Throws `StorageError.changedOutsideApp` instead of overwriting a file someone else has changed.
     func save(_ note: Note) async throws
 
     func deletePermanently(_ noteID: UUID) async throws
@@ -29,6 +27,7 @@ protocol StorageService: Sendable {
 enum StorageError: LocalizedError {
     case folderAlreadyExists(String)
     case folderNotEmpty(String)
+    case changedOutsideApp(String)
 
     var errorDescription: String? {
         switch self {
@@ -36,6 +35,8 @@ enum StorageError: LocalizedError {
             String(localized: "A folder named “\(name)” already exists.")
         case .folderNotEmpty(let name):
             String(localized: "The folder “\(name)” isn’t empty.")
+        case .changedOutsideApp(let name):
+            String(localized: "“\(name)” was changed outside NotesV.")
         }
     }
 }

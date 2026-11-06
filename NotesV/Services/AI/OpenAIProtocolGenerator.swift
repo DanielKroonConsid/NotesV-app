@@ -46,7 +46,9 @@ struct OpenAIProtocolGenerator: ProtocolGenerator {
             let warning = model.isStale
                 ? String(localized: "Couldn’t check for the newest model, so NotesV used \(model.modelID) from last time.")
                 : nil
-            return ProtocolGenerationResult(minutes: try Self.decodeProtocol(from: content), modelID: model.modelID, warning: warning)
+            var minutes = try Self.decodeProtocol(from: content)
+            minutes.language = ProtocolLanguageDetector.languageCode(for: language, minutes: minutes, notes: notes)
+            return ProtocolGenerationResult(minutes: minutes, modelID: model.modelID, warning: warning)
         }
         throw lastError
     }

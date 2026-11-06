@@ -27,13 +27,13 @@ struct NotesCommands: Commands {
                 }
             }
             .disabled(store.selectedNote == nil || store.selectedNote?.folderID == NoteFolder.recentlyDeletedName)
-            Button(store.selectedNote?.sentAt == nil ? "Mark as Sent" : "Mark as Not Sent") {
+            Button(store.selectedNote?.isSent == true ? "Mark as Not Sent" : "Mark as Sent") {
                 if let noteID = store.selectedNoteID {
                     store.toggleSent(noteID)
                 }
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
-            .disabled(store.selectedNote == nil)
+            .disabled(store.selectedNote?.isMeetingProtocol != true)
             Button("Generate Protocol…") {
                 if let note = store.selectedNote {
                     protocolGeneration.requestProtocol(for: note)

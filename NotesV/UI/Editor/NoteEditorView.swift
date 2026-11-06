@@ -24,7 +24,7 @@ struct NoteEditorView: NSViewRepresentable {
         guard let textView = coordinator.textView else { return }
 
         let modified = note.modified.formatted(date: .long, time: .shortened)
-        textView.headerText = note.sentAt.map { sentAt in
+        textView.headerText = (note.isSent ? note.sentAt : nil).map { sentAt in
             let sent = sentAt.formatted(date: .abbreviated, time: .shortened)
             return String(localized: "\(modified) · Sent \(sent)")
         } ?? modified

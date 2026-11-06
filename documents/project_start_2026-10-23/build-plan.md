@@ -1,7 +1,7 @@
 # NotesV – byggplan
 
 **Datum:** 2026-10-23
-**Status:** Steg 1–4 och 5a är byggda. Reviderad 2026-11-04.
+**Status:** Steg 1–4, 5a och 6 är byggda. Reviderad 2026-11-05.
 **Miljö:** Xcode 26.5, appen ska stödja macOS 15 Sequoia och senare.
 
 Projektets krav finns i [`CLAUDE.md`](../../CLAUDE.md). Det här dokumentet beskriver i vilken ordning vi bygger appen.
@@ -62,14 +62,16 @@ Lagring och AI ligger bakom egna gränssnitt (`StorageService` och `ProtocolGene
 ### Steg 5b – Inloggning och kalender (struket 2026-11-04)
 Krävde en appregistrering i Microsoft Entra, som inte går att göra. Möten kommer från `.ics`-filer och formuläret.
 
-### Steg 6 – Valfri lagringsmapp (föreslaget, inte beslutat)
-Den planerade kopplingen till OneDrive via Graph går inte att bygga utan appregistrering. Förslaget är i stället:
+### Steg 6 – Valfri lagringsmapp (klart 2026-11-05)
+Den planerade kopplingen till OneDrive via Graph går inte att bygga utan appregistrering. I stället gäller:
 - Man väljer en mapp på datorn i inställningarna, till exempel mappen som OneDrive-appen synkar.
 - OneDrive-appen sköter synk och offline-kopia. NotesV sparar bara filerna i mappen.
 - Appen märker om någon har ändrat en fil utanför appen, i stället för att skriva över ändringen.
 - Appen behöver skrivbehörighet för mappen som användaren väljer och måste minnas mappen mellan starter.
 
 **Klart när:** anteckningar sparas i den valda mappen och ändringar utanför appen skrivs inte över.
+
+Se [fas_3/progress.md](../fas_3/progress.md).
 
 ### Steg 7 – Copilot (struket 2026-11-04)
 Krävde användarens Microsoft-inloggning och därmed en appregistrering. OpenAI-kompatibla tjänster är den enda AI-vägen.

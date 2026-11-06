@@ -6,6 +6,8 @@ struct SettingsView: View {
         TabView {
             AISettingsView()
                 .tabItem { Label("AI", systemImage: "sparkles") }
+            StorageSettingsView()
+                .tabItem { Label("Storage", systemImage: "folder") }
         }
         .frame(width: 540)
     }
