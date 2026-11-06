@@ -76,6 +76,7 @@ The **Tasks** view in the sidebar collects the checkboxes in all protocols, sent
 - A task's done state follows its checkbox in both directions. If the line is gone, the task's own `status` applies.
 - Tasks of a deleted protocol leave the overview, and come back if it is restored.
 - The user can also write **manual tasks**, which have no protocol. They are stored in the front matter of `Manual Tasks/Tasks.md` in the root (`Note.manualTaskListID`). That folder isn't shown in the sidebar, and its note isn't listed or searched as a note.
+- A task can have a **note** and **subtasks**. They belong to the task only: they aren't in the protocol's text, in Copy for Email or sent to the AI provider. A task and its subtasks are ticked independently.
 - Ticking a task moves it to the Completed section at the end of the list, in every sort order. Unticking it reopens it.
 
 ## Storage
@@ -124,6 +125,8 @@ tasks:                       # Only on protocols: the reviewed tasks. `status` i
     owner: "Ada Ek"
     mine: false
     due: 2026-10-23
+    note: "Waiting for a price from Bo"
+    subtasks: ["[x] Get the price", "[ ] Write a draft"]
     status: open
 meeting:
   subject: "Weekly sync"

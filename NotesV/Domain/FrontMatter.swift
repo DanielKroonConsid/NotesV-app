@@ -55,6 +55,10 @@ enum FrontMatter {
                 if let owner = item.owner { lines.append("    owner: \(quoted(owner))") }
                 lines.append("    mine: \(item.isMine)")
                 if let dueDate = item.dueDate { lines.append("    due: \(ActionItem.dayString(from: dueDate))") }
+                if let note = item.note { lines.append("    note: \(quoted(note))") }
+                if !item.subtasks.isEmpty {
+                    lines.append("    subtasks: [\(item.subtasks.map { quoted($0.line) }.joined(separator: ", "))]")
+                }
                 lines.append("    status: \(item.status.rawValue)")
             }
         }
@@ -92,12 +96,14 @@ enum FrontMatter {
         var meetingValues: [String: String] = [:]
         var attendees: [String] = []
         var taskValues: [[String: String]] = []
+        var taskSubtasks: [[String]] = []
         var currentMap: String?
 
         for var line in lines {
             if currentMap == "tasks", let dash = line.firstIndex(of: "-"),
                line[..<dash].allSatisfy({ $0 == " " }), line[line.index(after: dash)...].first == " " {
                 taskValues.append([:])
+                taskSubtasks.append([])
                 line = "  " + line[line.index(after: dash)...]
             }
             guard let colon = line.firstIndex(of: ":") else { continue }
@@ -114,7 +120,11 @@ enum FrontMatter {
                 }
             } else if isIndented, currentMap == "tasks" {
                 if !taskValues.isEmpty {
-                    taskValues[taskValues.count - 1][key] = value
+                    if key == "subtasks" {
+                        taskSubtasks[taskSubtasks.count - 1] = parseList(rawValue)
+                    } else {
+                        taskValues[taskValues.count - 1][key] = value
+                    }
                 }
             } else if !isIndented {
                 currentMap = value.isEmpty ? key : nil
@@ -128,7 +138,7 @@ enum FrontMatter {
         fields.isPinned = values["pinned"].map { $0.lowercased() == "true" }
         fields.sourceNoteID = values["sourceNote"].flatMap(UUID.init(uuidString:))
         fields.sentAt = values["sent"].flatMap(parseDate)
-        fields.actionItems = taskValues.compactMap(parseActionItem)
+        fields.actionItems = zip(taskValues, taskSubtasks).compactMap(parseActionItem)
         if let start = meetingValues["start"].flatMap(parseDate) {
             // Older notes have an empty eventId for meetings that didn't come from Outlook.
             let eventID = meetingValues["eventId"].flatMap { $0.isEmpty ? nil : $0 }
@@ -147,7 +157,7 @@ enum FrontMatter {
     }
 
     /// A task needs its line in the protocol, so a damaged entry is left out.
-    private static func parseActionItem(_ values: [String: String]) -> ActionItem? {
+    private static func parseActionItem(_ values: [String: String], subtasks: [String]) -> ActionItem? {
         guard let source = values["source"], !source.isEmpty else { return nil }
         return ActionItem(
             source: source,
@@ -155,6 +165,8 @@ enum FrontMatter {
             owner: values["owner"].flatMap { $0.isEmpty ? nil : $0 },
             isMine: values["mine"]?.lowercased() == "true",
             dueDate: values["due"].flatMap(ActionItem.day),
+            note: values["note"].flatMap { $0.isEmpty ? nil : $0 },
+            subtasks: subtasks.compactMap(ActionItem.Subtask.init(line:)),
             status: values["status"].flatMap(ActionItem.Status.init(rawValue:)) ?? .open
         )
     }

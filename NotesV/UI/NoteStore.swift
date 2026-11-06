@@ -400,7 +400,7 @@ final class NoteStore {
     /// Adds reviewed tasks to their protocol. Tasks aren't edits to the text, so `modified` stays.
     func addActionItems(_ items: [ActionItem], to noteID: UUID) {
         guard !items.isEmpty, notes[noteID] != nil else { return }
-        notes[noteID]?.actionItems += items
+        notes[noteID]?.actionItems += items.map(\.cleaned)
         scheduleSave(noteID)
     }
 
@@ -422,7 +422,14 @@ final class NoteStore {
 
     func updateActionItem(_ id: ActionItemRow.ID, to item: ActionItem) {
         guard notes[id.noteID]?.actionItems.indices.contains(id.index) == true else { return }
-        notes[id.noteID]?.actionItems[id.index] = item
+        notes[id.noteID]?.actionItems[id.index] = item.cleaned
+        scheduleSave(id.noteID)
+    }
+
+    /// Ticks or unticks a subtask. The task itself stays as it is.
+    func setSubtask(_ index: Int, of id: ActionItemRow.ID, done: Bool) {
+        guard let item = notes[id.noteID]?.actionItems[safe: id.index], item.subtasks.indices.contains(index) else { return }
+        notes[id.noteID]?.actionItems[id.index].subtasks[index].isDone = done
         scheduleSave(id.noteID)
     }
 
@@ -687,5 +694,11 @@ final class NoteStore {
 
     private func report(_ error: Error) {
         errorMessage = error.localizedDescription
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

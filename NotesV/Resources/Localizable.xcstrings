@@ -121,6 +121,16 @@
         }
       }
     },
+    "Add Subtask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till underuppgift"
+          }
+        }
+      }
+    },
     "Add a meeting from an .ics file, or enter it by hand": {
       "localizations": {
         "sv": {
@@ -1031,6 +1041,16 @@
         }
       }
     },
+    "Note": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notering"
+          }
+        }
+      }
+    },
     "Notes": {
       "localizations": {
         "sv": {
@@ -1281,6 +1301,16 @@
         }
       }
     },
+    "Remove Subtask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort underuppgift"
+          }
+        }
+      }
+    },
     "Remove from List": {
       "localizations": {
         "sv": {
@@ -1517,6 +1547,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Underrubrik"
+          }
+        }
+      }
+    },
+    "Subtask": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underuppgift"
+          }
+        }
+      }
+    },
+    "Subtasks": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Underuppgifter"
           }
         }
       }

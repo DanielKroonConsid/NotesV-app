@@ -167,6 +167,91 @@ struct ActionItemTests {
         #expect(decoded.document == note.document)
     }
 
+    @Test func notesAndSubtasksSurviveARoundTrip() {
+        let subtasks: [ActionItem.Subtask] = [
+            .init(title: "Pris, \"offert\": klart [x]", isDone: true),
+            .init(title: "Rad med \\ tecken\noch radbrytning"),
+        ]
+        let item = ActionItem(source: "Ett", task: "Ett", note: "Väntar på \"Bo\":\nring måndag, gärna #1", subtasks: subtasks)
+        let note = protocolNote([checkbox("Ett")], actionItems: [item, ActionItem(source: "Två", task: "Två")])
+
+        let decoded = MarkdownCodec.decode(MarkdownCodec.encode(note))
+
+        #expect(decoded.fields?.actionItems == note.actionItems)
+        #expect(decoded.document == note.document)
+    }
+
+    @Test func notesAndSubtasksAreOnlyInTheFrontMatter() {
+        let item = ActionItem(source: "Ett", task: "Ett", note: "Hemlig notering", subtasks: [.init(title: "Hemligt steg")])
+        let note = protocolNote([checkbox("Ett")], actionItems: [item])
+
+        let text = MarkdownCodec.encode(note)
+        let body = FrontMatter.split(text).body
+
+        #expect(text.contains("note: \"Hemlig notering\""))
+        #expect(text.contains("subtasks: [\"[ ] Hemligt steg\"]"))
+        #expect(!body.contains("Hemlig"))
+        #expect(!EmailFormatter.plainText(for: note.document).contains("Hemlig"))
+    }
+
+    @Test func tasksWithoutNotesOrSubtasksGetNoExtraLines() {
+        let text = MarkdownCodec.encode(protocolNote([], actionItems: [ActionItem(source: "Ett", task: "Ett")]))
+        #expect(!text.contains("note:"))
+        #expect(!text.contains("subtasks:"))
+    }
+
+    @Test func aDamagedSubtaskIsLeftOut() {
+        let text = """
+        ---
+        tasks:
+          - source: "Rad"
+            subtasks: ["utan ruta", "[X] Klar", "[ ] Öppen"]
+            status: done
+        ---
+        Text
+        """
+        let item = MarkdownCodec.decode(text).fields?.actionItems.first
+        #expect(item?.subtasks == [.init(title: "Klar", isDone: true), .init(title: "Öppen")])
+        #expect(item?.status == .done)
+    }
+
+    @Test func emptyNotesAndSubtasksAreNotStored() async throws {
+        let (store, _) = await makeStore([])
+        var item = ActionItem(source: "Ett", task: "Ett", note: "  \n ", subtasks: [.init(title: " "), .init(title: "Steg")])
+        store.addManualActionItem(item)
+        let row = try #require(store.actionItemRows.first)
+        #expect(row.item.note == nil)
+        #expect(row.item.subtasks.map(\.title) == ["Steg"])
+
+        item.note = " Notering \n"
+        item.subtasks = []
+        store.updateActionItem(row.id, to: item)
+        #expect(store.actionItemRows.first?.item.note == "Notering")
+        #expect(store.actionItemRows.first?.item.subtasks == [])
+    }
+
+    @Test func subtasksAreTickedOnTheirOwn() async throws {
+        let task = ActionItem(source: "Ett", task: "Ett", subtasks: [.init(title: "A"), .init(title: "B")])
+        let note = protocolNote([checkbox("Ett")], actionItems: [task])
+        let (store, _) = await makeStore([note])
+        let id = try #require(store.actionItemRows.first?.id)
+
+        store.setSubtask(1, of: id, done: true)
+        #expect(store.actionItemRows.first?.item.subtasks.map(\.isDone) == [false, true])
+        #expect(store.actionItemRows.first?.isDone == false)
+        #expect(store.notes[note.id]?.modified == note.modified)
+        #expect(store.notes[note.id]?.document == note.document)
+
+        store.setSubtask(1, of: id, done: false)
+        #expect(store.actionItemRows.first?.item.subtasks.map(\.isDone) == [false, false])
+
+        // A task can be completed with open subtasks, and an index out of range does nothing.
+        store.setActionItem(id, done: true)
+        store.setSubtask(9, of: id, done: true)
+        #expect(store.actionItemRows.first?.isDone == true)
+        #expect(store.actionItemRows.first?.item.subtasks.map(\.isDone) == [false, false])
+    }
+
     @Test func tasksAreWrittenAsReadableYAML() {
         let note = protocolNote([], actionItems: [
             ActionItem(source: "Skicka – Ada", task: "Skicka", owner: "Ada", dueDate: day(2026, 11, 20)),
@@ -473,6 +558,18 @@ struct ActionItemTests {
 
         let owners = ActionItemOverview.sections(of: rows, filter: .all, sort: .owner, showsDone: false)
         #expect(owners.map(\.id) == [.me, .owner("Ada"), .owner("Örjan"), .noOwner])
+    }
+
+    @Test func searchFindsNotesAndSubtasks() {
+        var noted = row("Med notering")
+        noted = ActionItemRow(
+            id: noted.id,
+            item: ActionItem(source: "x", task: "Med notering", note: "Väntar på Bo", subtasks: [.init(title: "Hämta pris")]),
+            isDone: false, meetingTitle: "Sync", meetingDate: meetingDate
+        )
+        #expect(noted.matches(searchText: "väntar"))
+        #expect(noted.matches(searchText: "hämta"))
+        #expect(!noted.matches(searchText: "offert"))
     }
 
     @Test func searchesTaskOwnerAndMeeting() {

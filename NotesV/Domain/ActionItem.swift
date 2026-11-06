@@ -9,6 +9,38 @@ struct ActionItem: Hashable, Sendable {
         case ignored
     }
 
+    /// A step of a task. The id only exists in memory, to keep rows apart while they are edited.
+    struct Subtask: Identifiable, Hashable, Sendable {
+        let id = UUID()
+        var title: String
+        var isDone: Bool
+
+        init(title: String, isDone: Bool = false) {
+            self.title = title
+            self.isDone = isDone
+        }
+
+        /// Reads the form it has in the front matter: `[ ] title` or `[x] title`.
+        init?(line: String) {
+            let lowercased = line.lowercased()
+            guard lowercased.hasPrefix("[ ] ") || lowercased.hasPrefix("[x] ") else { return nil }
+            self.init(title: String(line.dropFirst(4)), isDone: lowercased.hasPrefix("[x]"))
+        }
+
+        var line: String {
+            "\(isDone ? "[x]" : "[ ]") \(title)"
+        }
+
+        static func == (lhs: Subtask, rhs: Subtask) -> Bool {
+            lhs.title == rhs.title && lhs.isDone == rhs.isDone
+        }
+
+        func hash(into hasher: inout Hasher) {
+            hasher.combine(title)
+            hasher.combine(isDone)
+        }
+    }
+
     /// The checkbox line in the protocol, which shows that it has been handled.
     var source: String
     var task: String
@@ -17,6 +49,9 @@ struct ActionItem: Hashable, Sendable {
     var isMine: Bool
     /// The start of the day the task is due.
     var dueDate: Date?
+    /// Only for the user. It isn't part of the protocol's text.
+    var note: String?
+    var subtasks: [Subtask]
     var status: Status
 
     init(
@@ -25,6 +60,8 @@ struct ActionItem: Hashable, Sendable {
         owner: String? = nil,
         isMine: Bool = false,
         dueDate: Date? = nil,
+        note: String? = nil,
+        subtasks: [Subtask] = [],
         status: Status = .open
     ) {
         self.source = source
@@ -32,7 +69,18 @@ struct ActionItem: Hashable, Sendable {
         self.owner = owner
         self.isMine = isMine
         self.dueDate = dueDate
+        self.note = note
+        self.subtasks = subtasks
         self.status = status
+    }
+
+    /// The task without an empty note or empty subtasks, which aren't worth storing.
+    var cleaned: ActionItem {
+        var item = self
+        let note = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        item.note = note?.isEmpty == false ? note : nil
+        item.subtasks.removeAll { $0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        return item
     }
 
     /// The form dates have in the front matter: a calendar day with no time zone.
@@ -200,7 +248,7 @@ struct ActionItemRow: Identifiable, Hashable, Sendable {
     func matches(searchText: String) -> Bool {
         let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty else { return true }
-        return [item.task, item.owner ?? "", meetingTitle].contains {
+        return ([item.task, item.owner ?? "", item.note ?? "", meetingTitle] + item.subtasks.map(\.title)).contains {
             $0.range(of: query, options: [.caseInsensitive, .diacriticInsensitive]) != nil
         }
     }

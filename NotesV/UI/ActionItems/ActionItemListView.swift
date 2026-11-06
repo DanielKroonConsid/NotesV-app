@@ -182,11 +182,20 @@ private struct ActionItemRowView: View {
             .labelsHidden()
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: row.item.task)
-                    .fontWeight(.semibold)
-                    .strikethrough(row.isDone)
-                    .foregroundStyle(row.isDone ? .secondary : .primary)
-                    .lineLimit(2)
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(verbatim: row.item.task)
+                        .fontWeight(.semibold)
+                        .strikethrough(row.isDone)
+                        .foregroundStyle(row.isDone ? .secondary : .primary)
+                        .lineLimit(2)
+                    if !row.item.subtasks.isEmpty {
+                        Spacer(minLength: 4)
+                        Text(verbatim: subtaskProgress)
+                            .font(.caption)
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 HStack(spacing: 6) {
                     owner
                     if let dueDate = row.item.dueDate {
@@ -196,12 +205,40 @@ private struct ActionItemRowView: View {
                 }
                 .font(.callout)
                 source
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                if let note = row.item.note {
+                    Label {
+                        Text(verbatim: note.prefix { !$0.isNewline }.description)
+                    } icon: {
+                        Image(systemName: "note.text")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                }
+                ForEach(Array(row.item.subtasks.enumerated()), id: \.element.id) { index, subtask in
+                    Toggle(isOn: Binding(
+                        get: { subtask.isDone },
+                        set: { store.setSubtask(index, of: row.id, done: $0) }
+                    )) {
+                        Text(verbatim: subtask.title)
+                            .strikethrough(subtask.isDone)
+                            .foregroundStyle(subtask.isDone ? .secondary : .primary)
+                            .lineLimit(2)
+                    }
+                    .font(.callout)
+                    .padding(.top, 2)
+                }
             }
         }
         .padding(.vertical, 4)
+        .help(Text(verbatim: row.item.note ?? ""))
+    }
+
+    private var subtaskProgress: String {
+        "\(row.item.subtasks.filter(\.isDone).count)/\(row.item.subtasks.count)"
     }
 
     @ViewBuilder
