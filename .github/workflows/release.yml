@@ -10,6 +10,9 @@ permissions:
 jobs:
   release:
     runs-on: macos-15
+    env:
+      # Step conditions can't read secrets, so the job works out what is available.
+      IS_NOTARIZED: ${{ secrets.DEVELOPER_ID_IDENTITY != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -24,7 +27,7 @@ jobs:
 
       # These steps only run once the Developer ID secrets are added to the repository.
       - name: Import the Developer ID certificate
-        if: ${{ secrets.DEVELOPER_ID_IDENTITY != '' }}
+        if: env.IS_NOTARIZED == 'true'
         env:
           DEVELOPER_ID_CERT_BASE64: ${{ secrets.DEVELOPER_ID_CERT_BASE64 }}
           DEVELOPER_ID_CERT_PASSWORD: ${{ secrets.DEVELOPER_ID_CERT_PASSWORD }}
@@ -53,7 +56,6 @@ jobs:
       - name: Publish the release
         env:
           GH_TOKEN: ${{ github.token }}
-          IS_NOTARIZED: ${{ secrets.DEVELOPER_ID_IDENTITY != '' }}
         run: |
           if [ "$IS_NOTARIZED" = "true" ]; then
             flags=()
