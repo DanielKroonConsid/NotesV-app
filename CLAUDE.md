@@ -10,7 +10,7 @@ structured protocol.
 
 **No Microsoft Entra app.** NotesV can't be registered in Microsoft Entra, so nothing may depend on one: no MSAL sign-in, no Microsoft Graph, no Outlook calendar and no Microsoft 365 Copilot.
 
-- **Look and feel:** as close to Apple's **Notes app on macOS** as possible: layout, typography, formatting and behaviour.
+- **Look and feel:** a native Mac note-taking app that follows Apple's Human Interface Guidelines. NotesV has its own identity, and its icon and texts must not be confused with Apple's products or imply a connection to Apple.
 - **Platform:** **macOS only**. No Windows, iOS or cross-platform targets.
 - **Languages:** the UI is available in **Swedish and English**. Protocols are generated in the language of the user's notes unless the user picks one.
 - **Audience:** anyone on a Mac. The app needs no Microsoft 365 account or sign-in.
@@ -37,16 +37,16 @@ Meetings come from **`.ics` files**. The meeting field in the toolbar takes an `
 - Leave out attendees who declined, and rooms. Remove Outlook's Teams join block, so links and passcodes never reach the AI provider.
 - Treat `.ics` files as untrusted plain text. They often come from other people.
 
-### 2. Take notes (Mac Notes UX)
-Replicate these Notes features:
+### 2. Take notes
+The editor has these features:
 - **Three-column layout:** folders sidebar, then the note list, then the editor (`NavigationSplitView`).
 - **Text styles:** Title, Heading, Subheading, Body, Monostyled. Bold, italic, underline, strikethrough.
 - **Lists:** bulleted, dashed and numbered lists, plus **checklists** you can tick off.
 - **Tables**, **pinned notes** and **full-text search**.
-- **Note list:** note folders group notes by meeting day, latest first. Notes without meeting details come first, under a clear warning. Other folders and search group by modified date, like Notes.
+- **Note list:** note folders group notes by meeting day, latest first. Notes without meeting details come first, under a clear warning. Other folders and search group by modified date.
 - **Paste from Apple Notes:** rich text on the clipboard becomes a note (`UI/Editor/RichPasteImporter`). Paragraph styles are worked out from font sizes and lists, and images are left out.
-- Use system fonts (SF Pro), system colors and native controls so the app follows light/dark mode and accessibility settings like Notes does.
-- Mirror Notes' keyboard shortcuts (e.g. ⇧⌘T Title, ⇧⌘H Heading, ⇧⌘J Subheading, ⇧⌘B Body, ⇧⌘L Checklist, ⇧⌘7 bulleted list).
+- Use system fonts (SF Pro), system colors and native controls so the app follows light/dark mode and accessibility settings.
+- Use the standard Mac keyboard shortcuts for text styles (e.g. ⇧⌘T Title, ⇧⌘H Heading, ⇧⌘J Subheading, ⇧⌘B Body, ⇧⌘L Checklist, ⇧⌘7 bulleted list).
 
 ### 3. Generate the meeting protocol
 Input: the meeting details plus the user's bullet points. Output: a formatted note with these sections:
@@ -141,6 +141,10 @@ Settings:
   - choose the model ("Latest" by default) and test the connection
   - pick the storage folder
 - Remember the server, the model choice and the folder's bookmark in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
+
+## Releases
+
+Pushing a tag like `v0.1.0` makes `.github/workflows/release.yml` test the app, run `Config/build-release.sh` and publish a `.dmg` on GitHub. Without the Developer ID secrets, the release is signed ad hoc and marked as a pre-release. `Config/NotesV-Release.entitlements` must match the capabilities in the Xcode project.
 
 ## Security and secrets
 

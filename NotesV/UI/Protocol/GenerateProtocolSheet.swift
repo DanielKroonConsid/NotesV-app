@@ -48,7 +48,7 @@ struct GenerateProtocolSheet: View {
             .disabled(model.isGenerating)
 
             Group {
-                if settings.configuration.isLocal {
+                if settings.configuration.isOnThisMac {
                     Text("The notes are sent to a server on this Mac.")
                 } else {
                     Text("The notes are sent to \(settings.configuration.endpointID), outside your Microsoft 365 organization.")

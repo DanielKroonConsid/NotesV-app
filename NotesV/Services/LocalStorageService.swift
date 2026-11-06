@@ -179,7 +179,8 @@ actor LocalStorageService: StorageService {
     /// add more, so this runs on every load.
     private func moveFoldersIntoNotes() {
         let folderURLs = (try? directories(in: rootURL)) ?? []
-        for folderURL in folderURLs where NoteFolder(name: folderURL.lastPathComponent).isSubfolder {
+        for folderURL in folderURLs
+        where NoteFolder(name: folderURL.lastPathComponent).isSubfolder && isNoteFolder(folderURL) {
             let targetURL = url(forFolder: folderURL.lastPathComponent)
             do {
                 try fileManager.createDirectory(at: notesFolderURL, withIntermediateDirectories: true)
@@ -191,6 +192,19 @@ actor LocalStorageService: StorageService {
             } catch {
                 continue
             }
+        }
+    }
+
+    /// Whether the directory is empty or holds a NotesV note. A picked folder can already be named
+    /// NotesV and hold other things, and those must stay where they are.
+    private func isNoteFolder(_ folderURL: URL) -> Bool {
+        let itemURLs = (try? fileManager.contentsOfDirectory(
+            at: folderURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+        )) ?? []
+        return itemURLs.isEmpty || itemURLs.contains { itemURL in
+            guard itemURL.pathExtension.lowercased() == FileNaming.noteExtension,
+                  let text = try? String(contentsOf: itemURL, encoding: .utf8) else { return false }
+            return MarkdownCodec.decode(text).fields?.id != nil
         }
     }
 

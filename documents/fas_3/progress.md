@@ -119,7 +119,7 @@ Arbetssättet är nu: skapa en anteckning, ge den en rubrik, skapa protokollet. 
 
 ## Appikon (2026-11-05)
 
-- **Motiv:** ikonen är själva papperet, med ett gult fält upptill, två textrader och en orange bock som också läses som V:t i NotesV. Upplägget liknar Apple Notes med flit. Det skiljer sig genom bocken, de korta textraderna och att fältet saknar streckad kant. Innan appen distribueras utanför företaget bör ikonen granskas, eftersom den ligger nära Apples.
+- **Motiv:** ett vitt papper med vikt hörn och två textrader på gul bakgrund, med en orange bock som också läses som V:t i NotesV. Ikonen är en egen design.
 - **Filer:** bilderna ligger i `Assets.xcassets/AppIcon.appiconset`, och de ritas av `Config/draw-app-icon.swift`.
 
 ## Närvaro bekräftas i dialogen (2026-11-06)
@@ -130,6 +130,31 @@ Arbetssättet är nu: skapa en anteckning, ge den en rubrik, skapa protokollet. 
 - **När dialogen visas:** om det finns personer eller åtgärdspunkter. Sektionen för ansvariga visas bara när det finns åtgärdspunkter.
 - **Prompten:** modellen ombeds skriva namn exakt som i mötesuppgifterna, så att samma person inte blir två rader. Den kan ändå skriva ett kortare namn när det är oklart vem som menas.
 - **Begränsning:** valet görs när protokollet skapas. I ett färdigt protokoll ändrar man texten direkt.
+
+## Release på GitHub (2026-11-06)
+
+- **Flöde:** en tagg som `v0.1.0` startar `.github/workflows/release.yml`, som testar, bygger och publicerar en `.dmg` med kontrollsumma. `ci.yml` kör testerna på pull requests och `main`.
+- **Signering:** utan Apple-uppgifter signeras appen ad hoc och publiceras som förhandsversion. macOS blockerar då första starten, och Nyckelringen kan fråga igen efter uppdateringar. Lägg till hemligheterna i README för att notarisera. Det kräver ett betalt Apple Developer-konto.
+- **Licens:** alla rättigheter förbehållna, med Daniel Kroon som upphovsrättsinnehavare. Bekräfta att det stämmer gentemot Consid före bred spridning.
+- **Ikon:** gul sida med vikt hörn och bock. Den är inte juridiskt granskad.
+
+### Säkerhetsgenomgång före release
+
+Åtgärdat:
+- **Fel integritetstext:** en `.local`-server sades ligga på den här datorn, trots att den är en annan dator i nätverket. Texterna använder nu `isOnThisMac`.
+- **Flytt av mappar:** valdes en befintlig mapp som hette NotesV kunde orelaterade mappar flyttas in i `Notes/`. Nu flyttas bara tomma mappar och mappar med NotesV-anteckningar.
+- **Rader i front matter:** ett `\r\n` i till exempel en mötestitel från en `.ics`-fil kunde lägga till fält i filen. Nu skrivs det som escape-tecken.
+- **Promptinjektion:** modellen ombeds behandla mötesuppgifter och anteckningar som data. Det minskar risken men tar inte bort den, så läs protokollet innan det skickas.
+
+Kvar, med låg risk:
+- En `.local`-server kan använda vanlig http, så API-nyckeln skickas okrypterad i det lokala nätverket.
+- Vid en omdirigering kan URLSession skicka med rubriken `api-key` till en annan server. Det kräver att servern du själv valt beter sig illa.
+- Byter man adress under förinställningen Anpassad kan den sparade nyckeln skickas till den nya servern. Det sker bara när användaren själv ändrar adressen.
+- `.md`-filer läses utan storleksgräns. En mycket stor fil i en delad mapp kan göra appen långsam.
+- Möteslänkar från annat än Outlooks Teams-block, till exempel Zoom, tas inte bort från beskrivningen innan den skickas till AI-tjänsten.
+- Dialogen Skapa protokoll nämner bara anteckningarna, medan även mötesuppgifter skickas. Inställningarna säger båda.
+
+Inga fynd: nycklar sparas bara i Nyckelringen, inget loggas, filnamn kan inte lämna mappen, HTML för e-post escapeas, och appen har sandlåda med få behörigheter.
 
 ## Kvar att göra
 
