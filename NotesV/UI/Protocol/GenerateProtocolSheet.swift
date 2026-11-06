@@ -13,7 +13,7 @@ struct GenerateProtocolSheet: View {
 
     var body: some View {
         if let meeting = note.meeting, let minutes = model.pendingMinutes {
-            ActionItemsReview(
+            ProtocolReview(
                 minutes: Binding(get: { model.pendingMinutes ?? minutes }, set: { model.pendingMinutes = $0 }),
                 meeting: meeting,
                 onCreate: { model.createProtocol(store: store) },

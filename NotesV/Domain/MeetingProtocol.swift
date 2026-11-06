@@ -58,6 +58,37 @@ struct MeetingProtocol: Hashable, Sendable, Codable {
         return names.filter { !$0.isEmpty && seen.insert($0).inserted }
     }
 
+    /// The people whose attendance the user confirms: everyone the meeting or the protocol mentions.
+    func attendanceCandidates(for meeting: MeetingDetails) -> [String] {
+        var seen = Set<String>()
+        let names = meeting.attendees + [meeting.organizer] + attendeesPresent + attendeesAbsent
+        return names.filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
+
+    /// Puts every person in exactly one list. Present wins, and anyone left out counts as absent.
+    mutating func normalizeAttendance(for meeting: MeetingDetails) {
+        let candidates = attendanceCandidates(for: meeting)
+        let present = Set(attendeesPresent)
+        attendeesPresent = candidates.filter(present.contains)
+        attendeesAbsent = candidates.filter { !present.contains($0) }
+    }
+
+    /// Moves a person between the present and absent lists.
+    mutating func setAttended(_ attended: Bool, name: String) {
+        attendeesPresent.removeAll { $0 == name }
+        attendeesAbsent.removeAll { $0 == name }
+        if attended {
+            attendeesPresent.append(name)
+        } else {
+            attendeesAbsent.append(name)
+        }
+    }
+
+    /// Whether there is anything for the user to confirm before the protocol is created.
+    func needsReview(for meeting: MeetingDetails) -> Bool {
+        !actionItems.isEmpty || !attendanceCandidates(for: meeting).isEmpty
+    }
+
     /// The JSON schema of this structure, in the strict form OpenAI-style structured outputs require:
     /// every property is required, optional values are nullable, and no extra properties are allowed.
     static let jsonSchema: JSONValue = [

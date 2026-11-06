@@ -13,7 +13,7 @@ final class ProtocolGenerationModel {
     var errorMessage: String?
     /// Shown after a protocol was created, e.g. when an older model had to be used.
     var warning: String?
-    /// A generated protocol waiting for the user to match its action items.
+    /// A generated protocol waiting for the user to confirm attendance and owners.
     var pendingMinutes: MeetingProtocol?
     /// A newly created protocol that should open in its own window.
     var createdProtocolID: UUID?
@@ -45,8 +45,10 @@ final class ProtocolGenerationModel {
                     meeting: meeting, notes: sourceNote.document, language: language
                 )
                 pendingWarning = result.warning
-                pendingMinutes = result.minutes
-                if result.minutes.actionItems.isEmpty {
+                var minutes = result.minutes
+                minutes.normalizeAttendance(for: meeting)
+                pendingMinutes = minutes
+                if !minutes.needsReview(for: meeting) {
                     createProtocol(store: store)
                 }
             } catch is CancellationError {

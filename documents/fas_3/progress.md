@@ -122,6 +122,15 @@ Arbetssättet är nu: skapa en anteckning, ge den en rubrik, skapa protokollet. 
 - **Motiv:** ikonen är själva papperet, med ett gult fält upptill, två textrader och en orange bock som också läses som V:t i NotesV. Upplägget liknar Apple Notes med flit. Det skiljer sig genom bocken, de korta textraderna och att fältet saknar streckad kant. Innan appen distribueras utanför företaget bör ikonen granskas, eftersom den ligger nära Apples.
 - **Filer:** bilderna ligger i `Assets.xcassets/AppIcon.appiconset`, och de ritas av `Config/draw-app-icon.swift`.
 
+## Närvaro bekräftas i dialogen (2026-11-06)
+
+- **Varför:** modellen lade alla inbjudna under Närvarande när anteckningarna inte sa något, så listan kunde vara fel.
+- **Dialogen** heter nu Granska protokoll och har en sektion Närvaro med en kryssruta per person. Rutorna är förifyllda med modellens förslag. Den som inte är ikryssad hamnar under Frånvarande.
+- **Vilka som visas:** inbjudna, organisatören och namn som modellen tagit från anteckningarna. Varje person finns bara i en av listorna.
+- **När dialogen visas:** om det finns personer eller åtgärdspunkter. Sektionen för ansvariga visas bara när det finns åtgärdspunkter.
+- **Prompten:** modellen ombeds skriva namn exakt som i mötesuppgifterna, så att samma person inte blir två rader. Den kan ändå skriva ett kortare namn när det är oklart vem som menas.
+- **Begränsning:** valet görs när protokollet skapas. I ett färdigt protokoll ändrar man texten direkt.
+
 ## Kvar att göra
 
 - **Prova mappvalet med en riktig OneDrive-mapp.** Testerna använder tillfälliga mappar, så synk, filer som bara finns online och konfliktkopior från OneDrive är oprovade.

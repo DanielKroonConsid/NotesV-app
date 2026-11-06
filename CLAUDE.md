@@ -54,7 +54,9 @@ Input: the meeting details plus the user's bullet points. Output: a formatted no
 2. **Attendees:** present and absent
 3. **Agenda & discussion:** a summary for each agenda item
 4. **Decisions:** a clear list
-5. **Action items:** a checklist with owner and an optional due date. The user matches owners in a dialog before the protocol is created.
+5. **Action items:** a checklist with owner and an optional due date.
+
+Before the protocol is created, the user confirms in a dialog who attended and matches action items with owners. Anyone not ticked as attending is listed as absent.
 
 The protocol is an **attachment** to the note it was made from:
 - It is stored as its own note in the **Meeting Protocols** folder, linked by `sourceNote` in the front matter. The source note is never changed.
