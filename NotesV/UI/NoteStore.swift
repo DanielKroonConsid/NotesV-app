@@ -59,14 +59,16 @@ final class NoteStore {
 
     // MARK: - Derived state
 
-    /// The protocols the task overview covers.
-    private var activeProtocols: [Note] {
-        notes.values.filter { $0.isMeetingProtocol && $0.folderID != NoteFolder.recentlyDeletedName }
+    /// The notes the task overview covers.
+    private var taskNotes: [Note] {
+        notes.values.filter { note in
+            note.holdsManualTasks || (note.isMeetingProtocol && note.folderID != NoteFolder.recentlyDeletedName)
+        }
     }
 
     /// The tasks in the overview. Whether a task is done follows its checkbox while the checkbox exists.
     var actionItemRows: [ActionItemRow] {
-        activeProtocols.flatMap { note in
+        taskNotes.flatMap { note in
             let blocks = note.matchActionItems().blocks
             return note.actionItems.enumerated().compactMap { index, item -> ActionItemRow? in
                 guard item.status != .ignored else { return nil }
@@ -78,15 +80,22 @@ final class NoteStore {
                     id: ActionItemRow.ID(noteID: note.id, index: index),
                     item: item,
                     isDone: isDone,
-                    meetingTitle: note.actionItemMeetingTitle,
-                    meetingDate: note.actionItemMeetingDate
+                    meetingTitle: note.holdsManualTasks ? "" : note.actionItemMeetingTitle,
+                    meetingDate: note.holdsManualTasks ? .distantPast : note.actionItemMeetingDate,
+                    isManual: note.holdsManualTasks
                 )
             }
         }
     }
 
+    /// Everyone in the meetings or the list, to choose an owner from.
+    var actionItemPeople: [String] {
+        let names = taskNotes.flatMap(\.actionItemPeople) + taskNotes.flatMap(\.actionItems).compactMap(\.owner)
+        return Set(names).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
     var newActionItemCount: Int {
-        activeProtocols.reduce(0) { $0 + $1.newActionItemLines().count }
+        taskNotes.reduce(0) { $0 + $1.newActionItemLines().count }
     }
 
     var openActionItemCount: Int {
@@ -95,7 +104,7 @@ final class NoteStore {
 
     /// The checkboxes that haven't been reviewed, per protocol with the latest meeting first.
     func actionItemProposals(myNames: [String]) -> [ActionItemProposal] {
-        activeProtocols
+        taskNotes
             .sorted { lhs, rhs in
                 lhs.actionItemMeetingDate != rhs.actionItemMeetingDate
                     ? lhs.actionItemMeetingDate > rhs.actionItemMeetingDate
@@ -130,7 +139,7 @@ final class NoteStore {
     /// The notes in the selected folder, or all matching notes while searching. Newest first.
     var visibleNotes: [Note] {
         let candidates = isSearching
-            ? notes.values.filter { $0.folderID != NoteFolder.recentlyDeletedName && $0.matches(searchText: searchText) }
+            ? notes.values.filter { $0.folderID != NoteFolder.recentlyDeletedName && !$0.holdsManualTasks && $0.matches(searchText: searchText) }
             : notes.values.filter { isNote($0, in: selectedFolderID) }
         return candidates.sorted { lhs, rhs in
             lhs.modified != rhs.modified ? lhs.modified > rhs.modified : lhs.id.uuidString < rhs.id.uuidString
@@ -204,8 +213,8 @@ final class NoteStore {
 
     /// The folders in the sidebar: the stored folders plus the Tasks and Sent views.
     var sidebarFolders: [NoteFolder] {
-        let deletedIndex = folders.firstIndex { $0.kind == .recentlyDeleted } ?? folders.endIndex
-        var result = folders
+        var result = folders.filter { $0.kind != .manualTasks }
+        let deletedIndex = result.firstIndex { $0.kind == .recentlyDeleted } ?? result.endIndex
         result.insert(contentsOf: [.actionItems, .sent], at: deletedIndex)
         return result
     }
@@ -395,6 +404,15 @@ final class NoteStore {
         scheduleSave(noteID)
     }
 
+    /// Adds a task the user wrote, which isn't connected to a protocol.
+    func addManualActionItem(_ item: ActionItem) {
+        if notes[Note.manualTaskListID] == nil {
+            notes[Note.manualTaskListID] = Note.manualTaskList()
+            ensureFolder(named: NoteFolder.manualTasksName)
+        }
+        addActionItems([item], to: Note.manualTaskListID)
+    }
+
     /// Keeps a checkbox out of the list, so it isn't suggested again.
     func ignoreActionItem(_ item: ActionItem, in noteID: UUID) {
         var item = item
@@ -408,10 +426,14 @@ final class NoteStore {
         scheduleSave(id.noteID)
     }
 
-    /// Takes a task out of the list. The protocol's checkbox stays, and isn't suggested again.
+    /// Takes a task out of the list. A protocol's checkbox stays, and isn't suggested again.
     func removeActionItem(_ id: ActionItemRow.ID) {
-        guard notes[id.noteID]?.actionItems.indices.contains(id.index) == true else { return }
-        notes[id.noteID]?.actionItems[id.index].status = .ignored
+        guard let note = notes[id.noteID], note.actionItems.indices.contains(id.index) else { return }
+        if note.holdsManualTasks {
+            notes[id.noteID]?.actionItems.remove(at: id.index)
+        } else {
+            notes[id.noteID]?.actionItems[id.index].status = .ignored
+        }
         scheduleSave(id.noteID)
     }
 
@@ -653,7 +675,7 @@ final class NoteStore {
             func rank(_ folder: NoteFolder) -> Int {
                 switch folder.kind {
                 case .recentlyDeleted: return 4
-                case .sent, .actionItems: return 3
+                case .sent, .actionItems, .manualTasks: return 3
                 case .meetingProtocols: return 2
                 case .regular: return folder.name == NoteFolder.defaultName ? 0 : 1
                 }

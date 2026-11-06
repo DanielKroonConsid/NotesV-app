@@ -179,7 +179,7 @@ extension Note {
 struct ActionItemRow: Identifiable, Hashable, Sendable {
     struct ID: Hashable, Sendable {
         let noteID: UUID
-        /// The task's position in the protocol. Tasks are never removed, so it stays the same.
+        /// The task's position in its note.
         let index: Int
     }
 
@@ -188,6 +188,8 @@ struct ActionItemRow: Identifiable, Hashable, Sendable {
     let isDone: Bool
     let meetingTitle: String
     let meetingDate: Date
+    /// Written by the user, so it has no protocol.
+    var isManual = false
 
     var noteID: UUID { id.noteID }
 
@@ -255,19 +257,26 @@ enum ActionItemOverview {
                 case .all: true
                 }
             }
-            .filter { (showsDone || !$0.isDone) && $0.matches(searchText: searchText) }
+            .filter { $0.matches(searchText: searchText) }
             .sorted(by: isOrderedBefore)
+        let open = rows.filter { !$0.isDone }
+        let done = rows.filter(\.isDone)
 
+        var sections: [Section]
         switch sort {
-        case .dueDate: return dueDateSections(of: rows, now: now, calendar: calendar)
-        case .meeting: return meetingSections(of: rows)
-        case .owner: return ownerSections(of: rows)
+        case .dueDate: sections = dueDateSections(of: open, now: now, calendar: calendar)
+        case .meeting: sections = meetingSections(of: open)
+        case .owner: sections = ownerSections(of: open)
         }
+        // Completed tasks stay together, whatever the sort order, so they are easy to reopen.
+        if showsDone, !done.isEmpty {
+            sections.append(Section(id: .done, rows: done))
+        }
+        return sections
     }
 
-    /// Unfinished first, then by date with undated tasks last, then the latest meeting.
+    /// By date with undated tasks last, then the latest meeting.
     private static func isOrderedBefore(_ lhs: ActionItemRow, _ rhs: ActionItemRow) -> Bool {
-        if lhs.isDone != rhs.isDone { return !lhs.isDone }
         let lhsDue = lhs.item.dueDate ?? .distantFuture
         let rhsDue = rhs.item.dueDate ?? .distantFuture
         if lhsDue != rhsDue { return lhsDue < rhsDue }
@@ -281,7 +290,6 @@ enum ActionItemOverview {
         let weekEnd = calendar.dateInterval(of: .weekOfYear, for: now)?.end ?? today
 
         func sectionID(of row: ActionItemRow) -> Section.ID {
-            if row.isDone { return .done }
             guard let due = row.item.dueDate else { return .noDate }
             let day = calendar.startOfDay(for: due)
             if day < today { return .overdue }
@@ -290,7 +298,7 @@ enum ActionItemOverview {
         }
 
         let groups = Dictionary(grouping: rows, by: sectionID)
-        let order: [Section.ID] = [.overdue, .today, .thisWeek, .later, .noDate, .done]
+        let order: [Section.ID] = [.overdue, .today, .thisWeek, .later, .noDate]
         return order.compactMap { id in groups[id].map { Section(id: id, rows: $0) } }
     }
 

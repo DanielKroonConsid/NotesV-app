@@ -6,10 +6,11 @@ struct ActionItemListView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var filter = ActionItemOverview.Filter.mine
     @State private var sort = ActionItemOverview.Sort.dueDate
-    @State private var showsDone = false
+    @AppStorage("tasks.showsCompleted") private var showsDone = true
     @State private var selection: ActionItemRow.ID?
     @State private var isReviewing = false
     @State private var editedRow: ActionItemRow?
+    @State private var isCreating = false
 
     private var sections: [ActionItemOverview.Section] {
         ActionItemOverview.sections(
@@ -44,9 +45,18 @@ struct ActionItemListView: View {
             }
         }
         .onChange(of: selection) { _, id in
-            store.selectedNoteID = id?.noteID
+            // A manual task has no protocol to show.
+            store.selectedNoteID = id.flatMap { store.notes[$0.noteID]?.holdsManualTasks == true ? nil : $0.noteID }
         }
         .toolbar {
+            ToolbarItem {
+                Button {
+                    isCreating = true
+                } label: {
+                    Label("New Task", systemImage: "plus")
+                }
+                .help(Text("New Task"))
+            }
             ToolbarItem {
                 Menu {
                     Picker("Sort By", selection: $sort) {
@@ -66,8 +76,22 @@ struct ActionItemListView: View {
         .sheet(isPresented: $isReviewing) {
             ActionItemReviewSheet()
         }
+        .sheet(isPresented: $isCreating) {
+            ActionItemFormSheet(title: "New Task", item: ActionItem(source: "", task: "", isMine: true), people: store.actionItemPeople) { item in
+                var item = item
+                item.source = item.task
+                store.addManualActionItem(item)
+            }
+        }
         .sheet(item: $editedRow) { row in
-            ActionItemEditSheet(row: row, people: store.notes[row.noteID]?.actionItemPeople ?? [])
+            ActionItemFormSheet(
+                title: "Edit Task",
+                footnote: row.isManual ? nil : "The text in the protocol doesn’t change.",
+                item: row.item,
+                people: store.actionItemPeople
+            ) { item in
+                store.updateActionItem(row.id, to: item)
+            }
         }
     }
 
@@ -99,8 +123,10 @@ struct ActionItemListView: View {
         Button("Edit…") {
             editedRow = row
         }
-        Button("Open Protocol in Its Own Window") {
-            openWindow(id: ProtocolWindowView.windowID, value: row.noteID)
+        if !row.isManual {
+            Button("Open Protocol in Its Own Window") {
+                openWindow(id: ProtocolWindowView.windowID, value: row.noteID)
+            }
         }
         Divider()
         Button("Remove from List", role: .destructive) {
@@ -127,7 +153,11 @@ private struct ActionItemSectionHeader: View {
         case .done:
             Text("Completed")
         case .meeting:
-            Text(verbatim: section.title ?? "")
+            if let title = section.title, !title.isEmpty {
+                Text(verbatim: title)
+            } else {
+                Text("Manual Tasks")
+            }
         case .me:
             Text("Me")
         case .owner(let name):
@@ -155,6 +185,7 @@ private struct ActionItemRowView: View {
                 Text(verbatim: row.item.task)
                     .fontWeight(.semibold)
                     .strikethrough(row.isDone)
+                    .foregroundStyle(row.isDone ? .secondary : .primary)
                     .lineLimit(2)
                 HStack(spacing: 6) {
                     owner
@@ -164,17 +195,26 @@ private struct ActionItemRowView: View {
                     }
                 }
                 .font(.callout)
-                Label {
-                    Text(verbatim: row.meetingTitle)
-                } icon: {
-                    Image(systemName: "doc.text")
-                }
+                source
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             }
         }
         .padding(.vertical, 4)
+    }
+
+    @ViewBuilder
+    private var source: some View {
+        if row.isManual {
+            Label("Manual Task", systemImage: "pencil")
+        } else {
+            Label {
+                Text(verbatim: row.meetingTitle)
+            } icon: {
+                Image(systemName: "doc.text")
+            }
+        }
     }
 
     @ViewBuilder
@@ -189,39 +229,55 @@ private struct ActionItemRowView: View {
     }
 }
 
-/// Changes a task that is already in the list. The protocol's text stays as it is.
-private struct ActionItemEditSheet: View {
-    let row: ActionItemRow
+/// Creates a task, or changes one that is already in the list.
+private struct ActionItemFormSheet: View {
+    let title: LocalizedStringKey
+    var footnote: LocalizedStringKey?
     let people: [String]
+    let onSave: (ActionItem) -> Void
 
-    @Environment(NoteStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var item: ActionItem
 
-    init(row: ActionItemRow, people: [String]) {
-        self.row = row
+    init(
+        title: LocalizedStringKey,
+        footnote: LocalizedStringKey? = nil,
+        item: ActionItem,
+        people: [String],
+        onSave: @escaping (ActionItem) -> Void
+    ) {
+        self.title = title
+        self.footnote = footnote
         self.people = people
-        _item = State(initialValue: row.item)
+        self.onSave = onSave
+        _item = State(initialValue: item)
+    }
+
+    private var trimmedTask: String {
+        item.task.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Edit Task")
+            Text(title)
                 .font(.headline)
             ActionItemEditor(item: $item, people: people)
-            Text("The text in the protocol doesn’t change.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            if let footnote {
+                Text(footnote)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             HStack {
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }
                     .keyboardShortcut(.cancelAction)
                 Button("Save") {
-                    store.updateActionItem(row.id, to: item)
+                    item.task = trimmedTask
+                    onSave(item)
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(item.task.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(trimmedTask.isEmpty)
             }
         }
         .padding(20)

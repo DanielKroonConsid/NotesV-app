@@ -5,10 +5,13 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
         case regular
         case meetingProtocols
         case actionItems
+        case manualTasks
         case sent
         case recentlyDeleted
     }
 
+    /// The directory of tasks that don't come from a protocol. The sidebar doesn't show it.
+    static let manualTasksName = "Manual Tasks"
     /// The folder name that new installations start with.
     static let defaultName = "Notes"
     /// The name of the folder that deleted notes are moved to.
@@ -31,6 +34,7 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
         case Self.meetingProtocolsName: .meetingProtocols
         case Self.sent.name: .sent
         case Self.actionItems.name: .actionItems
+        case Self.manualTasksName: .manualTasks
         default: .regular
         }
     }
@@ -79,6 +83,22 @@ struct Note: Identifiable, Hashable, Sendable {
         self.sentAt = sentAt
         self.actionItems = actionItems
         self.document = document
+    }
+
+    /// The note that holds tasks the user wrote themselves. The fixed id gives one list per library.
+    static let manualTaskListID = UUID(uuidString: "6E1F3C52-8A47-4D0B-9C21-5B7D2E90A1F4")!
+
+    static func manualTaskList() -> Note {
+        Note(
+            id: manualTaskListID,
+            folderID: NoteFolder.manualTasksName,
+            document: NoteDocument(blocks: [.paragraph(.title, RichText(plain: "Tasks"))])
+        )
+    }
+
+    /// A folder is checked, so a copy kept after a conflict with the file still shows its tasks.
+    var holdsManualTasks: Bool {
+        folderID == NoteFolder.manualTasksName
     }
 
     /// The first line of the note, or the meeting title if the note has no text yet.

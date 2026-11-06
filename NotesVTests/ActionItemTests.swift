@@ -379,6 +379,86 @@ struct ActionItemTests {
         #expect(shown.last?.rows.map(\.item.task) == ["Klar"])
     }
 
+    @Test(arguments: ActionItemOverview.Sort.allCases)
+    func completedTasksAreTogetherLastInEverySort(sort: ActionItemOverview.Sort) {
+        let rows = [row("Klar", owner: "Bo", done: true), row("Öppen", owner: "Bo")]
+
+        let shown = ActionItemOverview.sections(of: rows, filter: .all, sort: sort, showsDone: true)
+        #expect(shown.map { $0.rows.map(\.item.task) } == [["Öppen"], ["Klar"]])
+        #expect(shown.last?.id == .done)
+
+        let hidden = ActionItemOverview.sections(of: rows, filter: .all, sort: sort, showsDone: false)
+        #expect(hidden.flatMap(\.rows).map(\.item.task) == ["Öppen"])
+    }
+
+    @Test func aCompletedTaskCanBeReopened() async throws {
+        let note = protocolNote([checkbox("Ett")], actionItems: [ActionItem(source: "Ett", task: "Ett")])
+        let (store, _) = await makeStore([note])
+        let id = try #require(store.actionItemRows.first?.id)
+
+        store.setActionItem(id, done: true)
+        store.setActionItem(id, done: false)
+
+        #expect(store.actionItemRows.first?.isDone == false)
+        #expect(store.notes[note.id]?.actionItems.first?.status == .open)
+        #expect(store.notes[note.id]?.document.checklistItems.first?.item.isChecked == false)
+    }
+
+    // MARK: - Manual tasks
+
+    @Test func manualTasksAreKeptOutsideProtocolsAndNoteLists() async throws {
+        let (store, _) = await makeStore([])
+        var task = ActionItem(source: "Ring Bo", task: "Ring Bo", isMine: true, dueDate: day(2026, 11, 20))
+        store.addManualActionItem(task)
+        task.source = "Boka lokal"
+        task.task = "Boka lokal"
+        store.addManualActionItem(task)
+
+        #expect(store.actionItemRows.map(\.item.task) == ["Ring Bo", "Boka lokal"])
+        #expect(store.actionItemRows.filter(\.isManual).count == 2)
+        #expect(store.newActionItemCount == 0)
+        #expect(!store.sidebarFolders.map(\.name).contains(NoteFolder.manualTasksName))
+        store.searchText = "Tasks"
+        #expect(store.visibleNotes.isEmpty)
+    }
+
+    private func isDone(_ id: ActionItemRow.ID, in store: NoteStore) -> Bool? {
+        store.actionItemRows.first { $0.id == id }?.isDone
+    }
+
+    @Test func aManualTaskCanBeCompletedReopenedAndRemoved() async throws {
+        let (store, _) = await makeStore([])
+        store.addManualActionItem(ActionItem(source: "Ett", task: "Ett"))
+        store.addManualActionItem(ActionItem(source: "Två", task: "Två"))
+        let first = try #require(store.actionItemRows.first { $0.item.task == "Ett" }?.id)
+
+        store.setActionItem(first, done: true)
+        #expect(isDone(first, in: store) == true)
+        store.setActionItem(first, done: false)
+        #expect(isDone(first, in: store) == false)
+
+        store.removeActionItem(first)
+        #expect(store.actionItemRows.map(\.item.task) == ["Två"])
+        #expect(store.notes[Note.manualTaskListID]?.actionItems.count == 1)
+    }
+
+    @Test func manualTasksSurviveARestartInTheirOwnFolder() async throws {
+        let rootURL = FileManager.default.temporaryDirectory.appending(path: "NotesV-Tests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let store = NoteStore(storage: LocalStorageService(rootURL: rootURL))
+        await store.load()
+        store.addManualActionItem(ActionItem(source: "Ring Bo", task: "Ring Bo", owner: "Bo", status: .done))
+        await store.prepareForTermination()
+
+        let restarted = NoteStore(storage: LocalStorageService(rootURL: rootURL))
+        await restarted.load()
+
+        #expect(restarted.actionItemRows.map(\.item.owner) == ["Bo"])
+        #expect(restarted.actionItemRows.first?.isDone == true)
+        let path = rootURL.appending(path: "Manual Tasks/Tasks.md").path(percentEncoded: false)
+        #expect(FileManager.default.fileExists(atPath: path))
+    }
+
     @Test func sortsByMeetingAndOwner() {
         let older = UUID()
         let newer = UUID()

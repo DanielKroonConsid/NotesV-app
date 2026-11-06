@@ -346,7 +346,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Klara"
+            "value": "Avklarade"
           }
         }
       }
@@ -741,6 +741,26 @@
         }
       }
     },
+    "Manual Task": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manuell uppgift"
+          }
+        }
+      }
+    },
+    "Manual Tasks": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manuella uppgifter"
+          }
+        }
+      }
+    },
     "Mark as Checked": {
       "localizations": {
         "sv": {
@@ -917,6 +937,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ny anteckning"
+          }
+        }
+      }
+    },
+    "New Task": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ny uppgift"
           }
         }
       }
@@ -1426,7 +1456,7 @@
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Visa klara"
+            "value": "Visa avklarade"
           }
         }
       }

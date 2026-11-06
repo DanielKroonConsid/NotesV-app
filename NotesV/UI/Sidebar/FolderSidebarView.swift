@@ -107,7 +107,7 @@ private struct FolderRow: View {
             Label("Recently Deleted", systemImage: "trash")
         case .meetingProtocols:
             Label("Meeting Protocols", systemImage: "doc.text")
-        case .actionItems:
+        case .actionItems, .manualTasks:
             Label("Tasks", systemImage: "checklist")
         case .sent:
             Label("Sent Notes", systemImage: "paperplane")
