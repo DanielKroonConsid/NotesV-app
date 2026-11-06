@@ -10,7 +10,8 @@ NotesV is a native Mac app and needs no Microsoft 365 account or sign-in.
 - **Meetings from `.ics` files:** click or drag a file onto the meeting field, or enter the details by hand. The note list groups notes by meeting day, and notes without a meeting are shown first.
 - **Meeting protocols:** a protocol covers meeting info, attendees, agenda and discussion, decisions and action items. Before it is created, you confirm who attended and match action items with owners.
 - **Protocols as attachments:** each protocol is stored as its own note and linked to the note it was made from. It opens in its own window, can be copied to an email and can be marked as sent.
-- **Tasks:** NotesV finds the checkboxes in your protocols and shows how many are new. You set the owner and due date before a task is added. The overview shows your tasks and other people's, sorted by due date, meeting or owner, with a link to each protocol. You can add your own tasks, give a task a note and subtasks, keep tasks for later in a backlog, and reopen completed tasks from their own tab.
+- **Tasks:** NotesV finds the checkboxes in your protocols and shows how many are new. You set the owner and due date before a task is added, and you can add tasks of your own.
+- **Task overview:** tabs for your tasks, other people's, all, a backlog of tasks for later and completed tasks. Sort by due date, meeting or owner, and open the protocol a task came from. Tasks can have a note and subtasks. See the [task guide](documents/Uppgifter.md), in Swedish.
 - **Any OpenAI-compatible server:** OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio or any other base URL. With Ollama or LM Studio, meeting data stays on your Mac.
 - **Plain Markdown files:** each note is one `.md` file with YAML front matter, readable in any Markdown editor.
 - **Your own storage folder:** keep the notes in the app's container, or pick a folder, for example one that the OneDrive app syncs.
@@ -113,7 +114,7 @@ The tests use mocked responses and never call a real AI service.
 | `NotesV/Resources/` | Assets and the String Catalog with all UI text |
 | `NotesVTests/` | Unit tests |
 | `Config/` | Info.plist, entitlements and the script that draws the app icon |
-| `documents/` | Build plan and progress notes, in Swedish |
+| `documents/` | Build plan, progress notes and the task guide, in Swedish |
 
 ## Make a release
 
