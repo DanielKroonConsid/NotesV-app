@@ -41,18 +41,22 @@ struct ActionItemEditor: View {
                 .help(Text("Choose owner"))
                 .accessibilityLabel(Text("Choose owner"))
 
-                Toggle("Due date", isOn: hasDueDate)
-                    .labelsHidden()
-                    .help(Text("Due date"))
-                if item.dueDate != nil {
-                    DatePicker("Due date", selection: dueDate, displayedComponents: .date)
-                        .datePickerStyle(.field)
-                } else {
-                    Text("Due date")
-                        .foregroundStyle(.secondary)
+                if !item.isBacklog {
+                    Toggle("Due date", isOn: hasDueDate)
+                        .help(Text("Due date"))
+                    if item.dueDate != nil {
+                        DatePicker("Due date", selection: dueDate, displayedComponents: .date)
+                            .datePickerStyle(.field)
+                    } else {
+                        Text("Due date")
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
-            if let unreadDueText, item.dueDate == nil {
+            Toggle("Backlog", isOn: inBacklog)
+                .labelsVisibility(.visible)
+                .help(Text("A task for later, without a due date"))
+            if let unreadDueText, item.dueDate == nil, !item.isBacklog {
                 Text("The protocol says: \(unreadDueText)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -137,6 +141,18 @@ struct ActionItemEditor: View {
             set: { text in
                 item.isMine = false
                 item.owner = text.isEmpty ? nil : text
+            }
+        )
+    }
+
+    private var inBacklog: Binding<Bool> {
+        Binding(
+            get: { item.isBacklog },
+            set: { isBacklog in
+                item.isBacklog = isBacklog
+                if isBacklog {
+                    item.dueDate = nil
+                }
             }
         )
     }

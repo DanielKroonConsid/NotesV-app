@@ -61,6 +61,16 @@
         }
       }
     },
+    "A task for later, without a due date": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En uppgift för senare, utan förfallodatum"
+          }
+        }
+      }
+    },
     "AI": {
       "localizations": {
         "sv": {
@@ -197,6 +207,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deltagare"
+          }
+        }
+      }
+    },
+    "Backlog": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backlogg"
           }
         }
       }
@@ -901,12 +921,32 @@
         }
       }
     },
+    "Move Out of Backlog": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta från backlogg"
+          }
+        }
+      }
+    },
     "Move To": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Flytta till"
+          }
+        }
+      }
+    },
+    "Move to Backlog": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flytta till backlogg"
           }
         }
       }
@@ -1487,16 +1527,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Visa"
-          }
-        }
-      }
-    },
-    "Show Completed": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Visa avklarade"
           }
         }
       }

@@ -426,6 +426,13 @@ final class NoteStore {
         scheduleSave(id.noteID)
     }
 
+    /// Moves a task to the backlog, which removes its due date, or back to the list.
+    func setActionItem(_ id: ActionItemRow.ID, inBacklog: Bool) {
+        guard var item = notes[id.noteID]?.actionItems[safe: id.index] else { return }
+        item.isBacklog = inBacklog
+        updateActionItem(id, to: item)
+    }
+
     /// Ticks or unticks a subtask. The task itself stays as it is.
     func setSubtask(_ index: Int, of id: ActionItemRow.ID, done: Bool) {
         guard let item = notes[id.noteID]?.actionItems[safe: id.index], item.subtasks.indices.contains(index) else { return }

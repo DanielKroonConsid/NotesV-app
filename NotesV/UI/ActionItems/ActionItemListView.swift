@@ -6,7 +6,6 @@ struct ActionItemListView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var filter = ActionItemOverview.Filter.mine
     @State private var sort = ActionItemOverview.Sort.dueDate
-    @AppStorage("tasks.showsCompleted") private var showsDone = true
     @State private var selection: ActionItemRow.ID?
     @State private var isReviewing = false
     @State private var editedRow: ActionItemRow?
@@ -15,7 +14,7 @@ struct ActionItemListView: View {
 
     private var sections: [ActionItemOverview.Section] {
         ActionItemOverview.sections(
-            of: store.actionItemRows, filter: filter, sort: sort, showsDone: showsDone, searchText: store.searchText
+            of: store.actionItemRows, filter: filter, sort: sort, searchText: store.searchText
         )
     }
 
@@ -73,8 +72,6 @@ struct ActionItemListView: View {
                         Text("Owner").tag(ActionItemOverview.Sort.owner)
                     }
                     .pickerStyle(.inline)
-                    Divider()
-                    Toggle("Show Completed", isOn: $showsDone)
                 } label: {
                     Label("Sort By", systemImage: "arrow.up.arrow.down")
                 }
@@ -137,6 +134,8 @@ struct ActionItemListView: View {
                 Text("Mine").tag(ActionItemOverview.Filter.mine)
                 Text("Others").tag(ActionItemOverview.Filter.others)
                 Text("All").tag(ActionItemOverview.Filter.all)
+                Text("Backlog").tag(ActionItemOverview.Filter.backlog)
+                Text("Completed").tag(ActionItemOverview.Filter.completed)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -148,6 +147,11 @@ struct ActionItemListView: View {
     private func contextMenu(for row: ActionItemRow) -> some View {
         Button("Edit…") {
             editedRow = row
+        }
+        if !row.isDone {
+            Button(row.item.isBacklog ? "Move Out of Backlog" : "Move to Backlog") {
+                store.setActionItem(row.id, inBacklog: !row.item.isBacklog)
+            }
         }
         if !row.isManual {
             Button("Open Protocol in Its Own Window") {
@@ -176,6 +180,8 @@ private struct ActionItemSectionHeader: View {
             Text("Later")
         case .noDate:
             Text("No Date")
+        case .backlog:
+            Text("Backlog")
         case .done:
             Text("Completed")
         case .meeting:

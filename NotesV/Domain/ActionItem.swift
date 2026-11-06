@@ -49,6 +49,8 @@ struct ActionItem: Hashable, Sendable {
     var isMine: Bool
     /// The start of the day the task is due.
     var dueDate: Date?
+    /// A task for later. It has no due date, and is only listed in the backlog.
+    var isBacklog: Bool
     /// Only for the user. It isn't part of the protocol's text.
     var note: String?
     var subtasks: [Subtask]
@@ -60,6 +62,7 @@ struct ActionItem: Hashable, Sendable {
         owner: String? = nil,
         isMine: Bool = false,
         dueDate: Date? = nil,
+        isBacklog: Bool = false,
         note: String? = nil,
         subtasks: [Subtask] = [],
         status: Status = .open
@@ -69,14 +72,19 @@ struct ActionItem: Hashable, Sendable {
         self.owner = owner
         self.isMine = isMine
         self.dueDate = dueDate
+        self.isBacklog = isBacklog
         self.note = note
         self.subtasks = subtasks
         self.status = status
     }
 
     /// The task without an empty note or empty subtasks, which aren't worth storing.
+    /// A task in the backlog has no due date.
     var cleaned: ActionItem {
         var item = self
+        if isBacklog {
+            item.dueDate = nil
+        }
         let note = note?.trimmingCharacters(in: .whitespacesAndNewlines)
         item.note = note?.isEmpty == false ? note : nil
         item.subtasks.removeAll { $0.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -260,6 +268,8 @@ enum ActionItemOverview {
         case mine
         case others
         case all
+        case backlog
+        case completed
     }
 
     enum Sort: String, CaseIterable, Hashable, Sendable {
@@ -275,6 +285,7 @@ enum ActionItemOverview {
             case thisWeek
             case later
             case noDate
+            case backlog
             case done
             case meeting(UUID)
             case me
@@ -292,7 +303,6 @@ enum ActionItemOverview {
         of rows: [ActionItemRow],
         filter: Filter,
         sort: Sort,
-        showsDone: Bool,
         searchText: String = "",
         now: Date = .now,
         calendar: Calendar = .current
@@ -300,27 +310,34 @@ enum ActionItemOverview {
         let rows = rows
             .filter { row in
                 switch filter {
-                case .mine: row.item.isMine
-                case .others: !row.item.isMine
-                case .all: true
+                case .mine: isActive(row) && row.item.isMine
+                case .others: isActive(row) && !row.item.isMine
+                case .all: isActive(row)
+                case .backlog: !row.isDone && row.item.isBacklog
+                case .completed: row.isDone
                 }
             }
             .filter { $0.matches(searchText: searchText) }
             .sorted(by: isOrderedBefore)
-        let open = rows.filter { !$0.isDone }
-        let done = rows.filter(\.isDone)
 
-        var sections: [Section]
         switch sort {
-        case .dueDate: sections = dueDateSections(of: open, now: now, calendar: calendar)
-        case .meeting: sections = meetingSections(of: open)
-        case .owner: sections = ownerSections(of: open)
+        case .dueDate:
+            // Backlog tasks have no dates to group by, and past dates mean nothing for finished tasks.
+            switch filter {
+            case .backlog: return rows.isEmpty ? [] : [Section(id: .backlog, rows: rows)]
+            case .completed: return rows.isEmpty ? [] : [Section(id: .done, rows: rows)]
+            case .mine, .others, .all: return dueDateSections(of: rows, now: now, calendar: calendar)
+            }
+        case .meeting:
+            return meetingSections(of: rows)
+        case .owner:
+            return ownerSections(of: rows)
         }
-        // Completed tasks stay together, whatever the sort order, so they are easy to reopen.
-        if showsDone, !done.isEmpty {
-            sections.append(Section(id: .done, rows: done))
-        }
-        return sections
+    }
+
+    /// Tasks being worked on, which the backlog and completed tabs don't have.
+    private static func isActive(_ row: ActionItemRow) -> Bool {
+        !row.isDone && !row.item.isBacklog
     }
 
     /// By date with undated tasks last, then the latest meeting.

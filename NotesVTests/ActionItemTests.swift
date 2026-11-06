@@ -435,7 +435,7 @@ struct ActionItemTests {
     @Test func filtersMineAndOthers() {
         let rows = [row("Min", mine: true), row("Annans", owner: "Bo"), row("Ingen")]
         func tasks(_ filter: ActionItemOverview.Filter) -> Set<String> {
-            Set(ActionItemOverview.sections(of: rows, filter: filter, sort: .dueDate, showsDone: false).flatMap(\.rows).map(\.item.task))
+            Set(ActionItemOverview.sections(of: rows, filter: filter, sort: .dueDate).flatMap(\.rows).map(\.item.task))
         }
         #expect(tasks(.mine) == ["Min"])
         #expect(tasks(.others) == ["Annans", "Ingen"])
@@ -455,25 +455,78 @@ struct ActionItemTests {
             row("Senast", due: day(2026, 10, 2)),
             row("Klar", due: day(2026, 11, 2), done: true),
         ]
-        let hidden = ActionItemOverview.sections(of: rows, filter: .all, sort: .dueDate, showsDone: false, now: now, calendar: calendar)
-        #expect(hidden.map(\.id) == [.overdue, .today, .thisWeek, .later, .noDate])
-        #expect(hidden[0].rows.map(\.item.task) == ["Senast", "Sen"])
-
-        let shown = ActionItemOverview.sections(of: rows, filter: .all, sort: .dueDate, showsDone: true, now: now, calendar: calendar)
-        #expect(shown.last?.id == .done)
-        #expect(shown.last?.rows.map(\.item.task) == ["Klar"])
+        let sections = ActionItemOverview.sections(of: rows, filter: .all, sort: .dueDate, now: now, calendar: calendar)
+        #expect(sections.map(\.id) == [.overdue, .today, .thisWeek, .later, .noDate])
+        #expect(sections[0].rows.map(\.item.task) == ["Senast", "Sen"])
     }
 
     @Test(arguments: ActionItemOverview.Sort.allCases)
-    func completedTasksAreTogetherLastInEverySort(sort: ActionItemOverview.Sort) {
+    func completedTasksAreOnlyInTheirTab(sort: ActionItemOverview.Sort) {
         let rows = [row("Klar", owner: "Bo", done: true), row("Öppen", owner: "Bo")]
+        func tasks(_ filter: ActionItemOverview.Filter) -> [String] {
+            ActionItemOverview.sections(of: rows, filter: filter, sort: sort).flatMap(\.rows).map(\.item.task)
+        }
+        #expect(tasks(.completed) == ["Klar"])
+        #expect(tasks(.all) == ["Öppen"])
+        #expect(tasks(.others) == ["Öppen"])
+    }
 
-        let shown = ActionItemOverview.sections(of: rows, filter: .all, sort: sort, showsDone: true)
-        #expect(shown.map { $0.rows.map(\.item.task) } == [["Öppen"], ["Klar"]])
-        #expect(shown.last?.id == .done)
+    private func backlogRow(_ task: String, mine: Bool = false, done: Bool = false) -> ActionItemRow {
+        ActionItemRow(
+            id: .init(noteID: UUID(), index: 0),
+            item: ActionItem(source: task, task: task, isMine: mine, isBacklog: true),
+            isDone: done, meetingTitle: "Sync", meetingDate: meetingDate
+        )
+    }
 
-        let hidden = ActionItemOverview.sections(of: rows, filter: .all, sort: sort, showsDone: false)
-        #expect(hidden.flatMap(\.rows).map(\.item.task) == ["Öppen"])
+    @Test(arguments: ActionItemOverview.Sort.allCases)
+    func backlogTasksAreOnlyInTheirTab(sort: ActionItemOverview.Sort) {
+        let rows = [backlogRow("Min senare", mine: true), backlogRow("Annans senare"), backlogRow("Klar senare", done: true), row("Nu", mine: true)]
+        func tasks(_ filter: ActionItemOverview.Filter) -> Set<String> {
+            Set(ActionItemOverview.sections(of: rows, filter: filter, sort: sort).flatMap(\.rows).map(\.item.task))
+        }
+        #expect(tasks(.backlog) == ["Min senare", "Annans senare"])
+        #expect(tasks(.mine) == ["Nu"])
+        #expect(tasks(.others).isEmpty)
+        #expect(tasks(.all) == ["Nu"])
+        #expect(tasks(.completed) == ["Klar senare"])
+    }
+
+    @Test func backlogAndCompletedAreNotGroupedByDate() {
+        let rows = [backlogRow("Senare"), row("Klar", due: day(2020, 1, 1), done: true)]
+        #expect(ActionItemOverview.sections(of: rows, filter: .backlog, sort: .dueDate).map(\.id) == [.backlog])
+        #expect(ActionItemOverview.sections(of: rows, filter: .completed, sort: .dueDate).map(\.id) == [.done])
+    }
+
+    @Test func movingToTheBacklogRemovesTheDueDate() async throws {
+        let (store, _) = await makeStore([])
+        store.addManualActionItem(ActionItem(source: "Ett", task: "Ett", dueDate: day(2026, 11, 20)))
+        let id = try #require(store.actionItemRows.first?.id)
+
+        store.setActionItem(id, inBacklog: true)
+        #expect(store.actionItemRows.first?.item.isBacklog == true)
+        #expect(store.actionItemRows.first?.item.dueDate == nil)
+
+        store.setActionItem(id, inBacklog: false)
+        #expect(store.actionItemRows.first?.item.isBacklog == false)
+    }
+
+    @Test func aReopenedTaskReturnsToTheBacklog() async throws {
+        let (store, _) = await makeStore([])
+        store.addManualActionItem(ActionItem(source: "Ett", task: "Ett", isBacklog: true))
+        let id = try #require(store.actionItemRows.first?.id)
+
+        store.setActionItem(id, done: true)
+        #expect(ActionItemOverview.sections(of: store.actionItemRows, filter: .backlog, sort: .dueDate).isEmpty)
+        store.setActionItem(id, done: false)
+        #expect(ActionItemOverview.sections(of: store.actionItemRows, filter: .backlog, sort: .dueDate).count == 1)
+    }
+
+    @Test func theBacklogSurvivesARoundTrip() {
+        let items = [ActionItem(source: "Ett", task: "Ett", isBacklog: true), ActionItem(source: "Två", task: "Två")]
+        let text = MarkdownCodec.encode(protocolNote([], actionItems: items))
+        #expect(text.components(separatedBy: "backlog: true").count == 2)
+        #expect(MarkdownCodec.decode(text).fields?.actionItems == items)
     }
 
     @Test func aCompletedTaskCanBeReopened() async throws {
@@ -553,10 +606,10 @@ struct ActionItemTests {
             row("C", mine: true, noteID: newer, meeting: "Nytt", meetingDate: day(2026, 6, 1), index: 1),
             row("D", noteID: older, meeting: "Gammalt", meetingDate: day(2026, 1, 1), index: 1),
         ]
-        let meetings = ActionItemOverview.sections(of: rows, filter: .all, sort: .meeting, showsDone: false)
+        let meetings = ActionItemOverview.sections(of: rows, filter: .all, sort: .meeting)
         #expect(meetings.map(\.title) == ["Nytt", "Gammalt"])
 
-        let owners = ActionItemOverview.sections(of: rows, filter: .all, sort: .owner, showsDone: false)
+        let owners = ActionItemOverview.sections(of: rows, filter: .all, sort: .owner)
         #expect(owners.map(\.id) == [.me, .owner("Ada"), .owner("Örjan"), .noOwner])
     }
 
@@ -575,7 +628,7 @@ struct ActionItemTests {
     @Test func searchesTaskOwnerAndMeeting() {
         let rows = [row("Skicka offert", owner: "Åsa"), row("Boka", meeting: "Styrelsemöte")]
         func tasks(_ query: String) -> [String] {
-            ActionItemOverview.sections(of: rows, filter: .all, sort: .dueDate, showsDone: false, searchText: query).flatMap(\.rows).map(\.item.task)
+            ActionItemOverview.sections(of: rows, filter: .all, sort: .dueDate, searchText: query).flatMap(\.rows).map(\.item.task)
         }
         #expect(tasks("offert") == ["Skicka offert"])
         #expect(tasks("asa") == ["Skicka offert"])

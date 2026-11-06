@@ -55,6 +55,7 @@ enum FrontMatter {
                 if let owner = item.owner { lines.append("    owner: \(quoted(owner))") }
                 lines.append("    mine: \(item.isMine)")
                 if let dueDate = item.dueDate { lines.append("    due: \(ActionItem.dayString(from: dueDate))") }
+                if item.isBacklog { lines.append("    backlog: true") }
                 if let note = item.note { lines.append("    note: \(quoted(note))") }
                 if !item.subtasks.isEmpty {
                     lines.append("    subtasks: [\(item.subtasks.map { quoted($0.line) }.joined(separator: ", "))]")
@@ -165,6 +166,7 @@ enum FrontMatter {
             owner: values["owner"].flatMap { $0.isEmpty ? nil : $0 },
             isMine: values["mine"]?.lowercased() == "true",
             dueDate: values["due"].flatMap(ActionItem.day),
+            isBacklog: values["backlog"]?.lowercased() == "true",
             note: values["note"].flatMap { $0.isEmpty ? nil : $0 },
             subtasks: subtasks.compactMap(ActionItem.Subtask.init(line:)),
             status: values["status"].flatMap(ActionItem.Status.init(rawValue:)) ?? .open
