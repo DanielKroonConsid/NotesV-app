@@ -2,8 +2,8 @@ import Foundation
 
 /// Reads and writes the YAML front matter at the top of a note file.
 ///
-/// Only the small YAML subset that NotesV writes is supported: `key: value` pairs and one level of
-/// nested mappings. Unknown keys are ignored.
+/// Only the small YAML subset that NotesV writes is supported: `key: value` pairs, one level of
+/// nested mappings, and one list of mappings (`tasks`). Unknown keys are ignored.
 enum FrontMatter {
     /// The metadata stored in the front matter. Every field is optional, because files edited
     /// outside the app may lack some or all of it.
@@ -15,6 +15,7 @@ enum FrontMatter {
         var meeting: MeetingDetails?
         var sourceNoteID: UUID?
         var sentAt: Date?
+        var actionItems: [ActionItem] = []
     }
 
     static let delimiter = "---"
@@ -45,6 +46,17 @@ enum FrontMatter {
                 lines.append("  attendees: [\(meeting.attendees.map(quoted).joined(separator: ", "))]")
             }
             if !meeting.agenda.isEmpty { lines.append("  agenda: \(quoted(meeting.agenda))") }
+        }
+        if !note.actionItems.isEmpty {
+            lines.append("tasks:")
+            for item in note.actionItems {
+                lines.append("  - source: \(quoted(item.source))")
+                lines.append("    task: \(quoted(item.task))")
+                if let owner = item.owner { lines.append("    owner: \(quoted(owner))") }
+                lines.append("    mine: \(item.isMine)")
+                if let dueDate = item.dueDate { lines.append("    due: \(ActionItem.dayString(from: dueDate))") }
+                lines.append("    status: \(item.status.rawValue)")
+            }
         }
         lines.append(delimiter)
         return lines.joined(separator: "\n") + "\n"
@@ -79,9 +91,15 @@ enum FrontMatter {
         var values: [String: String] = [:]
         var meetingValues: [String: String] = [:]
         var attendees: [String] = []
+        var taskValues: [[String: String]] = []
         var currentMap: String?
 
-        for line in lines {
+        for var line in lines {
+            if currentMap == "tasks", let dash = line.firstIndex(of: "-"),
+               line[..<dash].allSatisfy({ $0 == " " }), line[line.index(after: dash)...].first == " " {
+                taskValues.append([:])
+                line = "  " + line[line.index(after: dash)...]
+            }
             guard let colon = line.firstIndex(of: ":") else { continue }
             let isIndented = line.first == " " || line.first == "\t"
             let key = line[..<colon].trimmingCharacters(in: .whitespaces)
@@ -93,6 +111,10 @@ enum FrontMatter {
                     attendees = parseList(rawValue)
                 } else {
                     meetingValues[key] = value
+                }
+            } else if isIndented, currentMap == "tasks" {
+                if !taskValues.isEmpty {
+                    taskValues[taskValues.count - 1][key] = value
                 }
             } else if !isIndented {
                 currentMap = value.isEmpty ? key : nil
@@ -106,6 +128,7 @@ enum FrontMatter {
         fields.isPinned = values["pinned"].map { $0.lowercased() == "true" }
         fields.sourceNoteID = values["sourceNote"].flatMap(UUID.init(uuidString:))
         fields.sentAt = values["sent"].flatMap(parseDate)
+        fields.actionItems = taskValues.compactMap(parseActionItem)
         if let start = meetingValues["start"].flatMap(parseDate) {
             // Older notes have an empty eventId for meetings that didn't come from Outlook.
             let eventID = meetingValues["eventId"].flatMap { $0.isEmpty ? nil : $0 }
@@ -121,6 +144,19 @@ enum FrontMatter {
             )
         }
         return fields
+    }
+
+    /// A task needs its line in the protocol, so a damaged entry is left out.
+    private static func parseActionItem(_ values: [String: String]) -> ActionItem? {
+        guard let source = values["source"], !source.isEmpty else { return nil }
+        return ActionItem(
+            source: source,
+            task: values["task"].flatMap { $0.isEmpty ? nil : $0 } ?? source,
+            owner: values["owner"].flatMap { $0.isEmpty ? nil : $0 },
+            isMine: values["mine"]?.lowercased() == "true",
+            dueDate: values["due"].flatMap(ActionItem.day),
+            status: values["status"].flatMap(ActionItem.Status.init(rawValue:)) ?? .open
+        )
     }
 
     private static func parseScalar(_ raw: Substring) -> String {

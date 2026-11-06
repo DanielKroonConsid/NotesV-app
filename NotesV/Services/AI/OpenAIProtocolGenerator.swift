@@ -90,6 +90,7 @@ struct OpenAIProtocolGenerator: ProtocolGenerator {
         - summary: short and easy to scan. At most 3 sentences per paragraph. Separate paragraphs with a newline.
         - decisions: one sentence per decision that the notes record.
         - actionItems: concrete tasks from the notes. Use null for an owner or due date that the notes don't state. For an owner, use the person's full name from the meeting details when it is clear who is meant.
+        - dueDate: write YYYY-MM-DD when the notes give a specific day, working out relative days such as "on Friday" from the meeting's start. Otherwise keep the notes' wording.
         """
         if mode != .jsonSchema {
             let schema = (try? JSONEncoder().encode(MeetingProtocol.jsonSchema)).map { String(decoding: $0, as: UTF8.self) } ?? ""

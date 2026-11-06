@@ -69,7 +69,7 @@ struct ProtocolReview: View {
                 detail: Text("Choose who is responsible for each action item. The due date is optional.")
             )
             ForEach(minutes.actionItems.indices, id: \.self) { index in
-                ActionItemRow(item: $minutes.actionItems[index], candidates: candidates)
+                ReviewedActionItemRow(item: $minutes.actionItems[index], candidates: candidates)
             }
         }
     }
@@ -91,7 +91,7 @@ struct ProtocolReview: View {
     }
 }
 
-private struct ActionItemRow: View {
+private struct ReviewedActionItemRow: View {
     @Binding var item: MeetingProtocol.ActionItem
     let candidates: [String]
 

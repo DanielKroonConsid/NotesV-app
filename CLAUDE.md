@@ -67,6 +67,15 @@ The generated protocol must use the app's own rich-text styles (headings, lists,
 Never invent decisions, owners or dates that aren't in the input. A missing owner gets a clear placeholder; a missing due date is simply left out.
 Every AI provider must produce the same structure. Ask for structured output (e.g. JSON matching a shared schema) and convert it to rich text in the app, rather than relying on each server's free-text formatting.
 
+### 4. Follow up tasks
+The **Tasks** view in the sidebar collects the checkboxes in all protocols, sent ones included.
+- The app finds unticked checkboxes on its own, locally, and shows how many are new. Nothing is added until the user has reviewed it: they edit the task, choose themselves, someone else or no owner, and set a due date. They can leave a task for later or ignore it.
+- `ActionItemLine` and `DueDateParser` only fill in suggestions, and a date that can't be read is never guessed.
+- The overview filters on mine and others, sorts by due date, meeting or owner, and shows the protocol of the selected task.
+- Tasks are stored in the protocol's front matter (`tasks`). `source` is the checkbox line and is how a checkbox is matched to its task. Changing a task doesn't change the protocol's text.
+- A task's done state follows its checkbox in both directions. If the line is gone, the task's own `status` applies.
+- Tasks of a deleted protocol leave the overview, and come back if it is restored.
+
 ## Storage
 
 ### Location
@@ -107,6 +116,13 @@ modified: 2026-10-20T09:45:00Z
 pinned: false
 sourceNote: 7B1C2D3E-1111-4222-8333-944455566677   # Only on protocols: the note it is attached to
 sent: 2026-10-20T11:00:00Z   # Only on protocols the user marked as sent
+tasks:                       # Only on protocols: the reviewed tasks. `status` is open, done or ignored
+  - source: "Send the offer – Ada Ek, Friday"
+    task: "Send the offer"
+    owner: "Ada Ek"
+    mine: false
+    due: 2026-10-23
+    status: open
 meeting:
   subject: "Weekly sync"
   start: 2026-10-20T09:00:00Z
@@ -140,6 +156,7 @@ Settings:
   - enter or remove the API key
   - choose the model ("Latest" by default) and test the connection
   - pick the storage folder
+  - enter the names the user goes by, which pre-select them when reviewing tasks
 - Remember the server, the model choice and the folder's bookmark in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
 
 ## Releases

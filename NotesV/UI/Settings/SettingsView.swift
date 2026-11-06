@@ -8,6 +8,8 @@ struct SettingsView: View {
                 .tabItem { Label("AI", systemImage: "sparkles") }
             StorageSettingsView()
                 .tabItem { Label("Storage", systemImage: "folder") }
+            GeneralSettingsView()
+                .tabItem { Label("General", systemImage: "gearshape") }
         }
         .frame(width: 540)
     }

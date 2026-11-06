@@ -355,7 +355,7 @@ struct MeetingTests {
         store.updateDocument(NoteDocument(blocks: [.paragraph(.title, "Sync")]), of: noteID)
         store.deleteNote(noteID)
 
-        #expect(store.sidebarFolders.map(\.name) == [NoteFolder.defaultName, NoteFolder.sent.name, NoteFolder.recentlyDeletedName])
+        #expect(store.sidebarFolders.map(\.name) == [NoteFolder.defaultName, NoteFolder.actionItems.name, NoteFolder.sent.name, NoteFolder.recentlyDeletedName])
     }
 
     @Test func onlyUserFoldersAreSubfolders() {

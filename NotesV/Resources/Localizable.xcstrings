@@ -11,6 +11,46 @@
         }
       }
     },
+    "%lld new tasks": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld new task"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld new tasks"
+                }
+              }
+            }
+          }
+        },
+        "sv": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld ny uppgift"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld nya uppgifter"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "A folder named “%@” already exists.": {
       "localizations": {
         "sv": {
@@ -37,6 +77,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "API-nyckel"
+          }
+        }
+      }
+    },
+    "Ada Ek, Ada": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ada Ek, Ada"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lägg till"
           }
         }
       }
@@ -87,6 +147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Agenda"
+          }
+        }
+      }
+    },
+    "All": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alla"
           }
         }
       }
@@ -251,12 +321,32 @@
         }
       }
     },
+    "Clear a box to decide later. Ignore keeps a task out of the list.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bocka ur en rad för att bestämma senare. Ignorera håller uppgiften borta från listan."
+          }
+        }
+      }
+    },
     "Comma-separated names": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Namn separerade med kommatecken"
+          }
+        }
+      }
+    },
+    "Completed": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klara"
           }
         }
       }
@@ -421,12 +511,42 @@
         }
       }
     },
+    "Due Date": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Förfallodatum"
+          }
+        }
+      }
+    },
     "Due date": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
-            "value": "Datum"
+            "value": "Förfallodatum"
+          }
+        }
+      }
+    },
+    "Edit Task": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändra uppgift"
+          }
+        }
+      }
+    },
+    "Edit…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ändra…"
           }
         }
       }
@@ -457,6 +577,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Format"
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allmänt"
           }
         }
       }
@@ -507,6 +637,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rubrik"
+          }
+        }
+      }
+    },
+    "Ignore": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorera"
           }
         }
       }
@@ -571,6 +711,16 @@
         }
       }
     },
+    "Later": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Senare"
+          }
+        }
+      }
+    },
     "Latest": {
       "localizations": {
         "sv": {
@@ -631,6 +781,16 @@
         }
       }
     },
+    "Me": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jag"
+          }
+        }
+      }
+    },
     "Meeting": {
       "localizations": {
         "sv": {
@@ -681,6 +841,16 @@
         }
       }
     },
+    "Mine": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mina"
+          }
+        }
+      }
+    },
     "Model": {
       "localizations": {
         "sv": {
@@ -707,6 +877,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Flytta till"
+          }
+        }
+      }
+    },
+    "My names": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mina namn"
           }
         }
       }
@@ -741,6 +921,26 @@
         }
       }
     },
+    "New Tasks": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nya uppgifter"
+          }
+        }
+      }
+    },
+    "No Date": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Utan datum"
+          }
+        }
+      }
+    },
     "No Meeting Info": {
       "localizations": {
         "sv": {
@@ -767,6 +967,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Inga anteckningar"
+          }
+        }
+      }
+    },
+    "No Tasks": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inga uppgifter"
           }
         }
       }
@@ -861,6 +1071,16 @@
         }
       }
     },
+    "Open Protocol in Its Own Window": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öppna protokollet i eget fönster"
+          }
+        }
+      }
+    },
     "Open Settings…": {
       "localizations": {
         "sv": {
@@ -917,6 +1137,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Annan OpenAI-kompatibel server"
+          }
+        }
+      }
+    },
+    "Others": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Andras"
+          }
+        }
+      }
+    },
+    "Overdue": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Försenade"
           }
         }
       }
@@ -1011,6 +1251,16 @@
         }
       }
     },
+    "Remove from List": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort från listan"
+          }
+        }
+      }
+    },
     "Rename": {
       "localizations": {
         "sv": {
@@ -1081,6 +1331,16 @@
         }
       }
     },
+    "Save": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spara"
+          }
+        }
+      }
+    },
     "Search": {
       "localizations": {
         "sv": {
@@ -1107,6 +1367,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Skickade"
+          }
+        }
+      }
+    },
+    "Separate names with commas. New tasks with one of these names are set to you when you review them. The names stay on this Mac.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skilj namnen åt med komma. Nya uppgifter med något av namnen sätts på dig när du granskar dem. Namnen stannar på den här Macen."
           }
         }
       }
@@ -1141,12 +1411,42 @@
         }
       }
     },
+    "Show": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa"
+          }
+        }
+      }
+    },
+    "Show Completed": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Visa klara"
+          }
+        }
+      }
+    },
     "Something went wrong": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Något gick fel"
+          }
+        }
+      }
+    },
+    "Sort By": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sortera efter"
           }
         }
       }
@@ -1197,6 +1497,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tabell"
+          }
+        }
+      }
+    },
+    "Task": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uppgift"
+          }
+        }
+      }
+    },
+    "Tasks": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uppgifter"
           }
         }
       }
@@ -1321,6 +1641,16 @@
         }
       }
     },
+    "The protocol says: %@": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protokollet säger: %@"
+          }
+        }
+      }
+    },
     "The server address isn’t a valid URL.": {
       "localizations": {
         "sv": {
@@ -1397,6 +1727,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Servern svarade med ett fel (%lld): %@"
+          }
+        }
+      }
+    },
+    "The text in the protocol doesn’t change.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Texten i protokollet ändras inte."
+          }
+        }
+      }
+    },
+    "This Week": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Denna vecka"
           }
         }
       }

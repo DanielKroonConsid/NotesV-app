@@ -4,6 +4,7 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
     enum Kind: Hashable, Sendable {
         case regular
         case meetingProtocols
+        case actionItems
         case sent
         case recentlyDeleted
     }
@@ -17,6 +18,8 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
     /// The view that collects all sent notes. It isn't a directory, and sent notes stay in their
     /// folder on disk. The leading dot can't clash with a real folder, which never has one.
     static let sent = NoteFolder(name: ".sent")
+    /// The overview of the tasks in all protocols. Like `sent`, it isn't a directory.
+    static let actionItems = NoteFolder(name: ".tasks")
 
     /// A folder is identified by its name, which is also its directory name in storage.
     var id: String { name }
@@ -27,6 +30,7 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
         case Self.recentlyDeletedName: .recentlyDeleted
         case Self.meetingProtocolsName: .meetingProtocols
         case Self.sent.name: .sent
+        case Self.actionItems.name: .actionItems
         default: .regular
         }
     }
@@ -49,6 +53,8 @@ struct Note: Identifiable, Hashable, Sendable {
     var sourceNoteID: UUID?
     /// When the user marked the note as sent. `nil` if it isn't marked.
     var sentAt: Date?
+    /// For a meeting protocol: the checkboxes the user has reviewed, in the order they were added.
+    var actionItems: [ActionItem]
     var document: NoteDocument
 
     init(
@@ -60,6 +66,7 @@ struct Note: Identifiable, Hashable, Sendable {
         meeting: MeetingDetails? = nil,
         sourceNoteID: UUID? = nil,
         sentAt: Date? = nil,
+        actionItems: [ActionItem] = [],
         document: NoteDocument = .newNote
     ) {
         self.id = id
@@ -70,6 +77,7 @@ struct Note: Identifiable, Hashable, Sendable {
         self.meeting = meeting
         self.sourceNoteID = sourceNoteID
         self.sentAt = sentAt
+        self.actionItems = actionItems
         self.document = document
     }
 

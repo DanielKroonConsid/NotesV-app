@@ -59,6 +59,62 @@ final class NoteStore {
 
     // MARK: - Derived state
 
+    /// The protocols the task overview covers.
+    private var activeProtocols: [Note] {
+        notes.values.filter { $0.isMeetingProtocol && $0.folderID != NoteFolder.recentlyDeletedName }
+    }
+
+    /// The tasks in the overview. Whether a task is done follows its checkbox while the checkbox exists.
+    var actionItemRows: [ActionItemRow] {
+        activeProtocols.flatMap { note in
+            let blocks = note.matchActionItems().blocks
+            return note.actionItems.enumerated().compactMap { index, item -> ActionItemRow? in
+                guard item.status != .ignored else { return nil }
+                var isDone = item.status == .done
+                if let block = blocks[index], case .listItem(let checkbox) = note.document.blocks[block] {
+                    isDone = checkbox.isChecked
+                }
+                return ActionItemRow(
+                    id: ActionItemRow.ID(noteID: note.id, index: index),
+                    item: item,
+                    isDone: isDone,
+                    meetingTitle: note.actionItemMeetingTitle,
+                    meetingDate: note.actionItemMeetingDate
+                )
+            }
+        }
+    }
+
+    var newActionItemCount: Int {
+        activeProtocols.reduce(0) { $0 + $1.newActionItemLines().count }
+    }
+
+    var openActionItemCount: Int {
+        actionItemRows.filter { !$0.isDone }.count
+    }
+
+    /// The checkboxes that haven't been reviewed, per protocol with the latest meeting first.
+    func actionItemProposals(myNames: [String]) -> [ActionItemProposal] {
+        activeProtocols
+            .sorted { lhs, rhs in
+                lhs.actionItemMeetingDate != rhs.actionItemMeetingDate
+                    ? lhs.actionItemMeetingDate > rhs.actionItemMeetingDate
+                    : lhs.id.uuidString < rhs.id.uuidString
+            }
+            .compactMap { note in
+                let lines = note.newActionItemLines()
+                guard !lines.isEmpty else { return nil }
+                return ActionItemProposal(
+                    noteID: note.id,
+                    title: note.actionItemMeetingTitle,
+                    people: note.actionItemPeople,
+                    drafts: lines.map {
+                        ActionItemDraft(noteID: note.id, line: $0, meetingDate: note.actionItemMeetingDate, myNames: myNames)
+                    }
+                )
+            }
+    }
+
     var selectedNote: Note? {
         selectedNoteID.flatMap { notes[$0] }
     }
@@ -146,11 +202,11 @@ final class NoteStore {
         }.count
     }
 
-    /// The folders in the sidebar: the stored folders plus the Sent view.
+    /// The folders in the sidebar: the stored folders plus the Tasks and Sent views.
     var sidebarFolders: [NoteFolder] {
         let deletedIndex = folders.firstIndex { $0.kind == .recentlyDeleted } ?? folders.endIndex
         var result = folders
-        result.insert(.sent, at: deletedIndex)
+        result.insert(contentsOf: [.actionItems, .sent], at: deletedIndex)
         return result
     }
 
@@ -330,6 +386,47 @@ final class NoteStore {
         scheduleSave(noteID)
     }
 
+    // MARK: - Tasks
+
+    /// Adds reviewed tasks to their protocol. Tasks aren't edits to the text, so `modified` stays.
+    func addActionItems(_ items: [ActionItem], to noteID: UUID) {
+        guard !items.isEmpty, notes[noteID] != nil else { return }
+        notes[noteID]?.actionItems += items
+        scheduleSave(noteID)
+    }
+
+    /// Keeps a checkbox out of the list, so it isn't suggested again.
+    func ignoreActionItem(_ item: ActionItem, in noteID: UUID) {
+        var item = item
+        item.status = .ignored
+        addActionItems([item], to: noteID)
+    }
+
+    func updateActionItem(_ id: ActionItemRow.ID, to item: ActionItem) {
+        guard notes[id.noteID]?.actionItems.indices.contains(id.index) == true else { return }
+        notes[id.noteID]?.actionItems[id.index] = item
+        scheduleSave(id.noteID)
+    }
+
+    /// Takes a task out of the list. The protocol's checkbox stays, and isn't suggested again.
+    func removeActionItem(_ id: ActionItemRow.ID) {
+        guard notes[id.noteID]?.actionItems.indices.contains(id.index) == true else { return }
+        notes[id.noteID]?.actionItems[id.index].status = .ignored
+        scheduleSave(id.noteID)
+    }
+
+    /// Marks a task as done or not, in the list and on the protocol's checkbox.
+    func setActionItem(_ id: ActionItemRow.ID, done: Bool) {
+        guard var note = notes[id.noteID], note.actionItems.indices.contains(id.index) else { return }
+        let item = note.actionItems[id.index]
+        if let block = note.matchActionItems().blocks[id.index] {
+            note.document.setChecked(done, block: block, expectedText: item.source)
+        }
+        note.actionItems[id.index].status = done ? .done : .open
+        notes[id.noteID] = note
+        scheduleSave(id.noteID)
+    }
+
     func moveNote(_ noteID: UUID, to folderID: NoteFolder.ID) {
         guard var note = notes[noteID], note.folderID != folderID else { return }
         if selectedNoteID == noteID, !isSearching {
@@ -349,6 +446,10 @@ final class NoteStore {
         }
         if selectedNoteID == noteID {
             selectNeighbor(of: noteID)
+            // The task overview has no neighbor to move on to.
+            if selectedNoteID == noteID, selectedFolderID == NoteFolder.actionItems.id {
+                selectedNoteID = nil
+            }
         }
         guard note.hasContent else {
             discard(noteID)
@@ -474,7 +575,8 @@ final class NoteStore {
     private func keepBothVersions(of note: Note) async {
         let copy = Note(
             folderID: note.folderID, created: note.created, modified: note.modified, isPinned: note.isPinned,
-            meeting: note.meeting, sourceNoteID: note.sourceNoteID, sentAt: note.sentAt, document: note.document
+            meeting: note.meeting, sourceNoteID: note.sourceNoteID, sentAt: note.sentAt,
+            actionItems: note.actionItems, document: note.document
         )
         notes[copy.id] = copy
         do {
@@ -551,7 +653,7 @@ final class NoteStore {
             func rank(_ folder: NoteFolder) -> Int {
                 switch folder.kind {
                 case .recentlyDeleted: return 4
-                case .sent: return 3
+                case .sent, .actionItems: return 3
                 case .meetingProtocols: return 2
                 case .regular: return folder.name == NoteFolder.defaultName ? 0 : 1
                 }

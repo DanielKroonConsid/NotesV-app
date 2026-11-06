@@ -13,8 +13,14 @@ struct ContentView: View {
             FolderSidebarView()
                 .navigationSplitViewColumnWidth(min: 160, ideal: 200, max: 320)
         } content: {
-            NoteListView()
-                .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 420)
+            Group {
+                if store.selectedFolderID == NoteFolder.actionItems.id {
+                    ActionItemListView()
+                } else {
+                    NoteListView()
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 420)
         } detail: {
             NoteDetailView()
         }
