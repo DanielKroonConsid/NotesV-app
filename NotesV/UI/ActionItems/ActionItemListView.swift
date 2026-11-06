@@ -11,6 +11,7 @@ struct ActionItemListView: View {
     @State private var isReviewing = false
     @State private var editedRow: ActionItemRow?
     @State private var isCreating = false
+    @State private var rowToRemove: ActionItemRow?
 
     private var sections: [ActionItemOverview.Section] {
         ActionItemOverview.sections(
@@ -27,12 +28,19 @@ struct ActionItemListView: View {
                         ForEach(section.rows) { row in
                             ActionItemRowView(row: row)
                                 .tag(row.id)
-                                .contextMenu { contextMenu(for: row) }
                         }
                     } header: {
                         ActionItemSectionHeader(section: section)
                     }
                 }
+            }
+            // The primary action is what a double-click does.
+            .contextMenu(forSelectionType: ActionItemRow.ID.self) { ids in
+                if let row = row(in: ids) {
+                    contextMenu(for: row)
+                }
+            } primaryAction: { ids in
+                editedRow = row(in: ids)
             }
             .overlay {
                 if sections.isEmpty {
@@ -76,6 +84,20 @@ struct ActionItemListView: View {
         .sheet(isPresented: $isReviewing) {
             ActionItemReviewSheet()
         }
+        .alert(
+            "Remove this task from the list?",
+            isPresented: Binding(get: { rowToRemove != nil }, set: { if !$0 { rowToRemove = nil } }),
+            presenting: rowToRemove
+        ) { row in
+            Button("Cancel", role: .cancel) {}
+            Button("OK", role: .destructive) { store.removeActionItem(row.id) }
+        } message: { row in
+            if row.isManual {
+                Text("You can’t undo this action.")
+            } else {
+                Text("The checkbox stays in the protocol, but it won’t be suggested again.")
+            }
+        }
         .sheet(isPresented: $isCreating) {
             ActionItemFormSheet(title: "New Task", item: ActionItem(source: "", task: "", isMine: true), people: store.actionItemPeople) { item in
                 var item = item
@@ -93,6 +115,10 @@ struct ActionItemListView: View {
                 store.updateActionItem(row.id, to: item)
             }
         }
+    }
+
+    private func row(in ids: Set<ActionItemRow.ID>) -> ActionItemRow? {
+        store.actionItemRows.first { ids.contains($0.id) }
     }
 
     private var header: some View {
@@ -130,7 +156,7 @@ struct ActionItemListView: View {
         }
         Divider()
         Button("Remove from List", role: .destructive) {
-            store.removeActionItem(row.id)
+            rowToRemove = row
         }
     }
 }

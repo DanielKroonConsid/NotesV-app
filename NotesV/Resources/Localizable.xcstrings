@@ -1321,6 +1321,16 @@
         }
       }
     },
+    "Remove this task from the list?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort uppgiften från listan?"
+          }
+        }
+      }
+    },
     "Rename": {
       "localizations": {
         "sv": {
@@ -1607,6 +1617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Testa anslutning"
+          }
+        }
+      }
+    },
+    "The checkbox stays in the protocol, but it won’t be suggested again.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checkboxen finns kvar i protokollet, men den föreslås inte igen."
           }
         }
       }
