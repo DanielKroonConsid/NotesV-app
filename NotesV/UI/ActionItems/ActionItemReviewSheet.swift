@@ -15,10 +15,10 @@ struct ActionItemReviewSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                ForEach($proposals) { $proposal in
+                ForEach(proposals) { proposal in
                     Section {
-                        ForEach($proposal.drafts) { $draft in
-                            row(draft: $draft, people: proposal.people)
+                        ForEach(proposal.drafts) { draft in
+                            row(draft: binding(for: draft), people: proposal.people)
                         }
                     } header: {
                         Text(verbatim: proposal.title)
@@ -48,6 +48,21 @@ struct ActionItemReviewSheet: View {
             didLoad = true
             proposals = store.actionItemProposals(myNames: profile.names)
         }
+    }
+
+    /// Finds the draft by id. A binding by position can outlive its row when a row is removed,
+    /// and SwiftUI then reads past the end of the array, which crashes.
+    private func binding(for draft: ActionItemDraft) -> Binding<ActionItemDraft> {
+        Binding(
+            get: {
+                proposals.lazy.flatMap(\.drafts).first { $0.id == draft.id } ?? draft
+            },
+            set: { newValue in
+                guard let proposal = proposals.firstIndex(where: { $0.noteID == draft.noteID }),
+                      let index = proposals[proposal].drafts.firstIndex(where: { $0.id == draft.id }) else { return }
+                proposals[proposal].drafts[index] = newValue
+            }
+        )
     }
 
     private func row(draft: Binding<ActionItemDraft>, people: [String]) -> some View {
