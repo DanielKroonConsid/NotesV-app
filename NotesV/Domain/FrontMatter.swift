@@ -3,7 +3,7 @@ import Foundation
 /// Reads and writes the YAML front matter at the top of a note file.
 ///
 /// Only the small YAML subset that NotesV writes is supported: `key: value` pairs, one level of
-/// nested mappings, and one list of mappings (`tasks`). Unknown keys are ignored.
+/// nested mappings, and the list of mappings (`tasks`) earlier versions wrote. Unknown keys are ignored.
 enum FrontMatter {
     /// The metadata stored in the front matter. Every field is optional, because files edited
     /// outside the app may lack some or all of it.
@@ -15,6 +15,8 @@ enum FrontMatter {
         var meeting: MeetingDetails?
         var sourceNoteID: UUID?
         var sentAt: Date?
+        /// A task's details. Its title, note and subtasks are in the file's body.
+        var task: ActionItem?
         var actionItems: [ActionItem] = []
     }
 
@@ -46,6 +48,16 @@ enum FrontMatter {
                 lines.append("  attendees: [\(meeting.attendees.map(quoted).joined(separator: ", "))]")
             }
             if !meeting.agenda.isEmpty { lines.append("  agenda: \(quoted(meeting.agenda))") }
+        }
+        if let task = note.task {
+            lines.append("task:")
+            if let protocolID = task.protocolID { lines.append("  protocol: \(protocolID.uuidString)") }
+            if !task.source.isEmpty { lines.append("  source: \(quoted(task.source))") }
+            if let owner = task.owner { lines.append("  owner: \(quoted(owner))") }
+            lines.append("  mine: \(task.isMine)")
+            if let dueDate = task.dueDate { lines.append("  due: \(ActionItem.dayString(from: dueDate))") }
+            if task.isBacklog { lines.append("  backlog: true") }
+            lines.append("  status: \(task.status.rawValue)")
         }
         if !note.actionItems.isEmpty {
             lines.append("tasks:")
@@ -98,6 +110,7 @@ enum FrontMatter {
         var attendees: [String] = []
         var taskValues: [[String: String]] = []
         var taskSubtasks: [[String]] = []
+        var singleTaskValues: [String: String] = [:]
         var currentMap: String?
 
         for var line in lines {
@@ -119,6 +132,8 @@ enum FrontMatter {
                 } else {
                     meetingValues[key] = value
                 }
+            } else if isIndented, currentMap == "task" {
+                singleTaskValues[key] = value
             } else if isIndented, currentMap == "tasks" {
                 if !taskValues.isEmpty {
                     if key == "subtasks" {
@@ -140,6 +155,9 @@ enum FrontMatter {
         fields.sourceNoteID = values["sourceNote"].flatMap(UUID.init(uuidString:))
         fields.sentAt = values["sent"].flatMap(parseDate)
         fields.actionItems = zip(taskValues, taskSubtasks).compactMap(parseActionItem)
+        if !singleTaskValues.isEmpty {
+            fields.task = parseTaskDetails(singleTaskValues)
+        }
         if let start = meetingValues["start"].flatMap(parseDate) {
             // Older notes have an empty eventId for meetings that didn't come from Outlook.
             let eventID = meetingValues["eventId"].flatMap { $0.isEmpty ? nil : $0 }
@@ -155,6 +173,19 @@ enum FrontMatter {
             )
         }
         return fields
+    }
+
+    private static func parseTaskDetails(_ values: [String: String]) -> ActionItem {
+        ActionItem(
+            source: values["source"] ?? "",
+            task: "",
+            owner: values["owner"].flatMap { $0.isEmpty ? nil : $0 },
+            isMine: values["mine"]?.lowercased() == "true",
+            dueDate: values["due"].flatMap(ActionItem.day),
+            isBacklog: values["backlog"]?.lowercased() == "true",
+            status: values["status"].flatMap(ActionItem.Status.init(rawValue:)) ?? .open,
+            protocolID: values["protocol"].flatMap(UUID.init(uuidString:))
+        )
     }
 
     /// A task needs its line in the protocol, so a damaged entry is left out.

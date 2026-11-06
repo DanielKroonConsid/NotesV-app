@@ -109,28 +109,41 @@ Uppgiften och underuppgifterna bockas av var för sig. Uppgiften blir inte avkla
 
 - **Protokolluppgift:** försvinner från listan. Checkboxen finns kvar i protokollet men föreslås inte igen.
 - **Manuell uppgift:** raderas helt och går inte att få tillbaka.
-- **Raderat protokoll:** dess uppgifter försvinner från översikten och kommer tillbaka om protokollet återställs.
+- **Raderat protokoll:** dess uppgifter försvinner från översikten och kommer tillbaka om protokollet återställs. Raderas protokollet permanent tas även uppgifternas filer bort.
 
 ## Var uppgifterna sparas
 
-Uppgifterna ligger i samma Markdown-filer som övriga anteckningar, så de följer med vid synk och när du byter lagringsmapp.
+Varje uppgift är en egen `.md`-fil i mappen `Tasks` i lagringsmappen, på samma sätt som anteckningar. De följer därför med vid synk och när du byter lagringsmapp. Mappen visas inte i sidopanelen, eftersom uppgifterna visas under **Uppgifter**.
 
-- **Protokolluppgifter** sparas i fältet `tasks` i protokollets front matter.
-- **Manuella uppgifter** sparas i `Manual Tasks/Tasks.md`. Mappen visas inte i sidopanelen.
+```markdown
+---
+id: 3F2504E0-4F89-11D3-9A0C-0305E82C3302
+created: 2026-11-04T09:00:00Z
+modified: 2026-11-04T09:45:00Z
+pinned: false
+task:
+  protocol: 3F2504E0-4F89-11D3-9A0C-0305E82C3301
+  source: "Skicka offert – Ada Ek, fredag"
+  owner: "Ada Ek"
+  mine: false
+  due: 2026-11-20
+  status: open
+---
+# Skicka offert
 
-```yaml
-tasks:
-  - source: "Skicka offert – Ada Ek, fredag"
-    task: "Skicka offert"
-    owner: "Ada Ek"
-    mine: false
-    due: 2026-11-20
-    note: "Väntar på pris från Bo."
-    subtasks: ["[x] Hämta pris", "[ ] Skriv utkast"]
-    status: open
+Väntar på pris från Bo.
+
+- [x] Hämta pris
+- [ ] Skriv utkast
 ```
 
-`source` är originalraden i protokollet. Det är så appen vet att en checkbox redan är behandlad. `status` är `open`, `done` eller `ignored`, och en uppgift i backloggen har även `backlog: true`.
+Rubriken är uppgiften, texten är noteringen och checklistan är underuppgifterna. Ändrar du filen i ett annat program läser NotesV in ändringen.
+
+- `protocol` kopplar uppgiften till sitt protokoll. Manuella uppgifter saknar fältet.
+- `source` är originalraden i protokollet. Det är så appen vet att en checkbox redan är behandlad.
+- `status` är `open`, `done` eller `ignored`. En uppgift i backloggen har även `backlog: true`.
+
+En ignorerad eller borttagen protokolluppgift behåller sin fil med `status: ignored`, så att checkboxen inte föreslås igen. Raderar du filen föreslås punkten på nytt.
 
 För att uppgifterna ska finnas kvar om datorn havererar måste du ha valt en lagringsmapp som säkerhetskopieras eller synkas, under **Inställningar → Lagring**. Ligger anteckningarna kvar i appens egen mapp finns de bara på den här Macen.
 
@@ -143,5 +156,6 @@ Inget av detta hamnar i protokollets text. Noteringar och underuppgifter följer
 - **Texten i protokollet ändras inte** när du ändrar en uppgift. Protokollet kan vara utskickat, och uppgiften är din egen uppföljning.
 - **Ändrar du en checkbox text i protokollet** föreslås den som en ny punkt. Den gamla uppgiften ligger kvar tills du tar bort den.
 - **Flera ansvariga med komma emellan**, till exempel `Ada, Bo, 20 nov`, tolkas fel i förifyllningen. Skriv `Ada och Bo` eller rätta i granskningen.
-- **Äldre versioner av NotesV** känner inte till uppgifterna. Sparar version 0.1.1 från GitHub ett protokoll tas dess uppgifter bort från filen, så använd inte den versionen på samma mapp.
+- **Uppgifter från äldre versioner** flyttas automatiskt till `Tasks` när appen startar.
+- **Äldre versioner av NotesV** ska inte användas på samma mapp. Version 0.2.0 och tidigare känner inte till mappen `Tasks` och flyttar in den under `Notes`.
 - **Påminnelser** finns inte. Appen meddelar dig inte när något förfaller.

@@ -72,10 +72,12 @@ The **Tasks** view in the sidebar collects the checkboxes in all protocols, sent
 - The app finds unticked checkboxes on its own, locally, and shows how many are new. Nothing is added until the user has reviewed it: they edit the task, choose themselves, someone else or no owner, and set a due date. They can leave a task for later or ignore it.
 - `ActionItemLine` and `DueDateParser` only fill in suggestions, and a date that can't be read is never guessed.
 - The overview filters on mine and others, sorts by due date, meeting or owner, and shows the protocol of the selected task.
-- Tasks are stored in the protocol's front matter (`tasks`). `source` is the checkbox line and is how a checkbox is matched to its task. Changing a task doesn't change the protocol's text.
+- Each task is **one `.md` file in the `Tasks` folder**, which is in the root and isn't shown in the sidebar. The title, note and subtasks are the file's body, and the rest is under `task:` in the front matter. `protocol` links to the protocol, and `source` is the checkbox line, which is how a checkbox is matched to its task. Changing a task doesn't change the protocol's text.
+- A removed or ignored protocol task keeps its file with `status: ignored`, so the checkbox isn't suggested again. A manual task's file is deleted.
+- Earlier versions stored tasks in the protocol's front matter (`tasks:`) and in `Manual Tasks/Tasks.md`. `NoteStore` moves them to files on every load, and the move can be interrupted safely.
 - A task's done state follows its checkbox in both directions. If the line is gone, the task's own `status` applies.
-- Tasks of a deleted protocol leave the overview, and come back if it is restored.
-- The user can also write **manual tasks**, which have no protocol. They are stored in the front matter of `Manual Tasks/Tasks.md` in the root (`Note.manualTaskListID`). That folder isn't shown in the sidebar, and its note isn't listed or searched as a note.
+- Tasks of a deleted protocol leave the overview, and come back if it is restored. They are deleted when the protocol is deleted permanently.
+- The user can also write **manual tasks**, which have no protocol.
 - A task can have a **note** and **subtasks**. They belong to the task only: they aren't in the protocol's text, in Copy for Email or sent to the AI provider. A task and its subtasks are ticked independently.
 - The overview has the tabs Mine, Others, All, Backlog and Completed. A task in the first three is open and not in the backlog.
 - **Backlog** tasks are for later and have no due date, so moving a task there removes its date (`backlog: true`).
@@ -86,7 +88,7 @@ The **Tasks** view in the sidebar collects the checkboxes in all protocols, sent
 ### Location
 Notes are stored through `StorageService`. **App folders map to directories**, and **each note is one `.md` file**.
 
-`Notes`, `Meeting Protocols`, `Manual Tasks` and `Recently Deleted` are in the root. **Folders the user creates are inside `Notes`**, one level deep, and `Notes` itself can't be renamed or deleted. `LocalStorageService` moves folders it finds next to `Notes` into it on every load, and a merge never loses a note.
+`Notes`, `Meeting Protocols`, `Tasks` and `Recently Deleted` are in the root. **Folders the user creates are inside `Notes`**, one level deep, and `Notes` itself can't be renamed or deleted. `LocalStorageService` moves folders it finds next to `Notes` into it on every load, and a merge never loses a note.
 
 By default they are in the app's container. In Settings the user can pick a folder with the system folder picker, for example one the OneDrive app syncs. That app handles sync and offline copies, and NotesV never talks to OneDrive itself.
 - The notes go in a `NotesV` subfolder of the picked folder, so other contents never show up as note folders.
@@ -122,15 +124,6 @@ modified: 2026-10-20T09:45:00Z
 pinned: false
 sourceNote: 7B1C2D3E-1111-4222-8333-944455566677   # Only on protocols: the note it is attached to
 sent: 2026-10-20T11:00:00Z   # Only on protocols the user marked as sent
-tasks:                       # Only on protocols: the reviewed tasks. `status` is open, done or ignored
-  - source: "Send the offer – Ada Ek, Friday"
-    task: "Send the offer"
-    owner: "Ada Ek"
-    mine: false
-    due: 2026-10-23
-    note: "Waiting for a price from Bo"
-    subtasks: ["[x] Get the price", "[ ] Write a draft"]
-    status: open
 meeting:
   subject: "Weekly sync"
   start: 2026-10-20T09:00:00Z
@@ -140,6 +133,31 @@ meeting:
   attendees: ["Ada Ek", "Bo Berg"]
   agenda: "Release\nBudget"
 ---
+```
+
+A task's file:
+
+```markdown
+---
+id: 3F2504E0-4F89-11D3-9A0C-0305E82C3302
+created: 2026-10-20T09:00:00Z
+modified: 2026-10-20T09:45:00Z
+pinned: false
+task:
+  protocol: 3F2504E0-4F89-11D3-9A0C-0305E82C3301   # Not on manual tasks
+  source: "Send the offer – Ada Ek, Friday"
+  owner: "Ada Ek"
+  mine: false
+  due: 2026-10-23
+  backlog: true                                    # Only on tasks for later
+  status: open                                     # open, done or ignored
+---
+# Send the offer
+
+Waiting for a price from Bo.
+
+- [x] Get the price
+- [ ] Write a draft
 ```
 
 - File names: a sanitized version of the note title plus `.md`, with a suffix like ` (2)` on conflicts. The `id` in the front matter is the stable identity, not the file name.

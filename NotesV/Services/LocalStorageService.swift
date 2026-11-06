@@ -154,6 +154,7 @@ actor LocalStorageService: StorageService {
             meeting: decoded.fields?.meeting,
             sourceNoteID: decoded.fields?.sourceNoteID,
             sentAt: decoded.fields?.sentAt,
+            task: decoded.fields?.task?.readingText(from: decoded.document),
             actionItems: decoded.fields?.actionItems ?? [],
             document: decoded.document
         )

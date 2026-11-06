@@ -131,5 +131,6 @@ struct SettingsBackupTests {
         #expect(items.first { $0.task == "Ett" }?.note == "Notering")
         #expect(items.first { $0.task == "Ett" }?.subtasks.first?.isDone == true)
         #expect(items.first { $0.task == "Egen" }?.isBacklog == true)
+        #expect(newMac.actionItemRows.first { $0.item.task == "Ett" }?.protocolID != nil)
     }
 }
