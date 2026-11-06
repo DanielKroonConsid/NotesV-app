@@ -161,6 +161,16 @@
         }
       }
     },
+    "Choose": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj"
+          }
+        }
+      }
+    },
     "Choose .ics File…": {
       "localizations": {
         "sv": {
@@ -171,12 +181,42 @@
         }
       }
     },
+    "Choose Folder…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj mapp…"
+          }
+        }
+      }
+    },
+    "Choose a folder that OneDrive or another service syncs to back up your notes and reach them on other Macs. NotesV copies the notes there and leaves the old files where they are. Notes that sync leave this Mac, including meeting details.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj en mapp som OneDrive eller en annan tjänst synkar för att säkerhetskopiera anteckningarna och nå dem på andra Mac-datorer. NotesV kopierar anteckningarna dit och låter de gamla filerna ligga kvar. Anteckningar som synkas lämnar den här datorn, även mötesuppgifter."
+          }
+        }
+      }
+    },
     "Choose owner": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Välj ansvarig"
+          }
+        }
+      }
+    },
+    "Choose where to store your notes. NotesV creates a folder named NotesV there.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Välj var anteckningarna ska sparas. NotesV skapar en mapp som heter NotesV där."
           }
         }
       }
@@ -691,6 +731,16 @@
         }
       }
     },
+    "No Meeting Info": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saknar mötesinfo"
+          }
+        }
+      }
+    },
     "No Note Selected": {
       "localizations": {
         "sv": {
@@ -741,6 +791,16 @@
         }
       }
     },
+    "Notes folder": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteckningsmapp"
+          }
+        }
+      }
+    },
     "Numbered List": {
       "localizations": {
         "sv": {
@@ -777,6 +837,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "På min Mac"
+          }
+        }
+      }
+    },
+    "On this Mac": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "På den här datorn"
           }
         }
       }
@@ -1071,6 +1141,16 @@
         }
       }
     },
+    "Storage": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lagring"
+          }
+        }
+      }
+    },
     "Strikethrough": {
       "localizations": {
         "sv": {
@@ -1107,6 +1187,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Testa anslutning"
+          }
+        }
+      }
+    },
+    "The chosen folder can’t be found. Choose a new one.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den valda mappen hittas inte. Välj en ny."
           }
         }
       }
@@ -1187,6 +1277,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Anteckningarna skickas till en server på den här datorn."
+          }
+        }
+      }
+    },
+    "The notes folder can’t be found. NotesV is using the folder on this Mac until you choose a new one in Settings.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anteckningsmappen hittas inte. NotesV använder mappen på den här datorn tills du väljer en ny i Inställningar."
           }
         }
       }
@@ -1351,6 +1451,16 @@
         }
       }
     },
+    "Use This Mac": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Använd den här datorn"
+          }
+        }
+      }
+    },
     "Use https. Plain http is only allowed for servers on this Mac (localhost).": {
       "localizations": {
         "sv": {
@@ -1387,6 +1497,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Du kan inte ångra den här åtgärden."
+          }
+        }
+      }
+    },
+    "“%@” was changed outside NotesV.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "”%@” ändrades utanför NotesV."
+          }
+        }
+      }
+    },
+    "“%@” was changed outside NotesV. Both versions are kept as separate notes.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "”%@” ändrades utanför NotesV. Båda versionerna finns kvar som separata anteckningar."
           }
         }
       }

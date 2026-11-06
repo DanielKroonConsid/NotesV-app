@@ -34,7 +34,7 @@ struct FolderSidebarView: View {
                                : store.unsentProtocolCount(in: folder.id))
                         .tag(folder.id)
                         .contextMenu {
-                            if folder.kind == .regular {
+                            if folder.isSubfolder {
                                 Button("Rename Folder…") {
                                     renamedFolderName = folder.name
                                     folderBeingRenamed = folder

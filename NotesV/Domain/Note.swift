@@ -84,6 +84,16 @@ struct Note: Identifiable, Hashable, Sendable {
         document.hasContent || meeting != nil
     }
 
+    /// A generated protocol. Older protocols have no link to a note, but are in the protocols folder.
+    var isMeetingProtocol: Bool {
+        sourceNoteID != nil || folderID == NoteFolder.meetingProtocolsName
+    }
+
+    /// Only protocols can be sent. An ordinary note marked by an earlier version counts as not sent.
+    var isSent: Bool {
+        sentAt != nil && isMeetingProtocol
+    }
+
     /// A protocol needs written notes to work from, and isn't made from another protocol.
     var canGenerateProtocol: Bool {
         document.hasContent && sourceNoteID == nil
