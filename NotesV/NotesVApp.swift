@@ -29,6 +29,8 @@ struct NotesVApp: App {
         Settings {
             SettingsView()
                 .environment(appDelegate.aiSettings)
+                .environment(appDelegate.storageSettings)
+                .environment(appDelegate.store)
         }
     }
 }
@@ -37,24 +39,26 @@ struct NotesVApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let store: NoteStore
     let aiSettings: AISettings
+    let storageSettings: StorageSettings
     let protocolGeneration = ProtocolGenerationModel()
     let meetingImport = MeetingImportModel()
 
     override init() {
-        let rootURL: URL
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             // Tests run inside the app; keep them away from the user's notes and settings.
-            rootURL = FileManager.default.temporaryDirectory.appending(path: "NotesV-TestHost-\(UUID().uuidString)")
+            let rootURL = FileManager.default.temporaryDirectory.appending(path: "NotesV-TestHost-\(UUID().uuidString)")
+            storageSettings = StorageSettings(defaultRootURL: rootURL, defaultsSuiteName: "NotesV-TestHost")
             aiSettings = AISettings(
                 keychain: KeychainService(service: "se.consid.NotesV.test-host"),
                 defaultsSuiteName: "NotesV-TestHost"
             )
         } else {
             aiSettings = AISettings()
-            rootURL = (try? LocalStorageService.defaultRootURL())
+            let rootURL = (try? LocalStorageService.defaultRootURL())
                 ?? FileManager.default.temporaryDirectory.appending(path: "NotesV")
+            storageSettings = StorageSettings(defaultRootURL: rootURL)
         }
-        store = NoteStore(storage: LocalStorageService(rootURL: rootURL))
+        store = NoteStore(storage: LocalStorageService(rootURL: storageSettings.rootURL))
         super.init()
     }
 
@@ -62,6 +66,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWindow.allowsAutomaticWindowTabbing = false
         Task {
             await store.load()
+            if storageSettings.isFolderMissing {
+                store.errorMessage = String(localized: "The notes folder can’t be found. NotesV is using the folder on this Mac until you choose a new one in Settings.")
+            }
+        }
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        Task {
+            await store.refresh()
         }
     }
 

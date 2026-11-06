@@ -24,7 +24,7 @@ structured protocol.
 | Rich-text editor | `NSTextView` wrapped in `NSViewRepresentable` (SwiftUI's rich-text `TextEditor` needs macOS 26) |
 | Meetings | `.ics` files, read by `Domain/ICSParser` |
 | AI / protocol generation | Any **OpenAI-compatible API** (OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio…), selectable by the user |
-| Storage | **Markdown files**, today in the app's container. Planned: a **folder the user picks** in Settings |
+| Storage | **Markdown files** in the app's container, or in a **folder the user picks** in Settings |
 
 Don't add third-party dependencies without asking first. Prefer Apple frameworks.
 Call OpenAI-compatible APIs directly with `URLSession` (`Services/AI/OpenAICompatibleClient`) rather than adding an SDK.
@@ -43,6 +43,7 @@ Replicate these Notes features:
 - **Text styles:** Title, Heading, Subheading, Body, Monostyled. Bold, italic, underline, strikethrough.
 - **Lists:** bulleted, dashed and numbered lists, plus **checklists** you can tick off.
 - **Tables**, **pinned notes** and **full-text search**.
+- **Note list:** note folders group notes by meeting day, latest first. Notes without meeting details come first, under a clear warning. Other folders and search group by modified date, like Notes.
 - **Paste from Apple Notes:** rich text on the clipboard becomes a note (`UI/Editor/RichPasteImporter`). Paragraph styles are worked out from font sizes and lists, and images are left out.
 - Use system fonts (SF Pro), system colors and native controls so the app follows light/dark mode and accessibility settings like Notes does.
 - Mirror Notes' keyboard shortcuts (e.g. ⇧⌘T Title, ⇧⌘H Heading, ⇧⌘J Subheading, ⇧⌘B Body, ⇧⌘L Checklist, ⇧⌘7 bulleted list).
@@ -57,6 +58,7 @@ Input: the meeting details plus the user's bullet points. Output: a formatted no
 
 The protocol is an **attachment** to the note it was made from:
 - It is stored as its own note in the **Meeting Protocols** folder, linked by `sourceNote` in the front matter. The source note is never changed.
+- Only protocols can be marked as sent. Sent protocols are listed in the Sent view, and the file stays in its folder. A `sent:` value on an ordinary note is ignored.
 - The source note lists its protocols above the editor. Clicking one opens it in its own window, where it can be edited and is saved automatically.
 
 The generated protocol must use the app's own rich-text styles (headings, lists, checklists), so the user can keep editing it like any other note.
@@ -66,11 +68,15 @@ Every AI provider must produce the same structure. Ask for structured output (e.
 ## Storage
 
 ### Location
-**Today:** notes are stored in the app's container, through `StorageService`. **App folders map to subfolders**, and **each note is one `.md` file**.
+Notes are stored through `StorageService`. **App folders map to directories**, and **each note is one `.md` file**.
 
-**Planned, not built:** the user picks a root folder in Settings with the system folder picker, for example the folder the OneDrive app syncs on this Mac. The OneDrive app then handles sync and offline copies, and NotesV never talks to OneDrive itself.
-- Save a security-scoped bookmark, so the folder survives restarts and renames. If the folder is gone, ask the user to pick a new one.
-- Changes made to the files outside the app must be detected and handled (e.g. via the modification date), not overwritten silently.
+`Notes`, `Meeting Protocols` and `Recently Deleted` are in the root. **Folders the user creates are inside `Notes`**, one level deep, and `Notes` itself can't be renamed or deleted. `LocalStorageService` moves folders it finds next to `Notes` into it on every load, and a merge never loses a note.
+
+By default they are in the app's container. In Settings the user can pick a folder with the system folder picker, for example one the OneDrive app syncs. That app handles sync and offline copies, and NotesV never talks to OneDrive itself.
+- The notes go in a `NotesV` subfolder of the picked folder, so other contents never show up as note folders.
+- `StorageSettings` saves a security-scoped bookmark, so the folder survives restarts and renames. If the folder is gone, the app uses the container and asks the user to pick a new one.
+- Changing folder copies the notes. The old files are kept, and a note that already exists in the new folder is left as it is.
+- Changes made outside the app are never overwritten. `LocalStorageService` compares a hash of the file before saving and throws `changedOutsideApp`. `NoteStore` then keeps both versions as separate notes. Files are read again when the app becomes active.
 
 ### Markdown format
 Notes are stored as **GitHub Flavored Markdown** with YAML front matter for metadata.
@@ -98,7 +104,7 @@ created: 2026-10-20T09:00:00Z
 modified: 2026-10-20T09:45:00Z
 pinned: false
 sourceNote: 7B1C2D3E-1111-4222-8333-944455566677   # Only on protocols: the note it is attached to
-sent: 2026-10-20T11:00:00Z   # Only on notes the user marked as sent
+sent: 2026-10-20T11:00:00Z   # Only on protocols the user marked as sent
 meeting:
   subject: "Weekly sync"
   start: 2026-10-20T09:00:00Z
@@ -131,8 +137,8 @@ Settings:
   - choose the server (preset or base URL) and how the key is sent
   - enter or remove the API key
   - choose the model ("Latest" by default) and test the connection
-  - pick the storage folder (planned)
-- Remember the server and the model choice in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
+  - pick the storage folder
+- Remember the server, the model choice and the folder's bookmark in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
 
 ## Security and secrets
 

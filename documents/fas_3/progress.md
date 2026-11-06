@@ -91,8 +91,40 @@ Arbetssättet är nu: skapa en anteckning, ge den en rubrik, skapa protokollet. 
 - **Normalt** visas bara antalet oskickade protokoll, vilket i praktiken betyder mappen Mötesprotokoll. Övriga mappar visar ingen siffra.
 - **När pekaren är över en mapp** visas det totala antalet anteckningar i den.
 
+## Vald lagringsmapp (2026-11-05)
+
+- **Välj mapp:** Inställningar → Lagring. Anteckningarna hamnar i en undermapp `NotesV` i den valda mappen, så att annat innehåll inte visas som anteckningsmappar. Heter den valda mappen redan NotesV används den direkt.
+- **Byte av mapp kopierar anteckningarna.** De gamla filerna ligger kvar. En anteckning som redan finns i den nya mappen lämnas orörd.
+- **Synk:** OneDrive-appen sköter synk och offline-kopia. NotesV pratar aldrig med OneDrive.
+- **Mappen saknas:** då används mappen på datorn, och appen ber användaren välja en ny.
+- **Ändringar utanför appen:** filerna läses om när appen blir aktiv. Före varje sparning jämförs filen med en hash. Har den ändrats sparas appens version som en ny anteckning, så att båda finns kvar.
+- **Behörigheter:** läsning och skrivning av valda filer, och `Config/NotesV.entitlements` för bokmärken.
+
+## Anteckningslistan grupperas efter möte (2026-11-05)
+
+- **Skickat gäller bara protokoll.** Knappen är avstängd på vanliga anteckningar, valet i Arkiv-menyn (⇧⌘E) likaså, och högerklicksvalet visas inte. Även äldre protokoll utan koppling kan markeras, eftersom de ligger i mappen Mötesprotokoll.
+- **Tidigare markerade anteckningar** kommer tillbaka till sin mapp och visas inte längre i Skickade. Raden `sent:` ligger kvar i filen men ignoreras.
+- **Mappen Anteckningar och egna mappar** visar först anteckningar utan möte under rubriken Saknar mötesinfo, med orange ikon. Sedan kommer en rubrik per mötesdag, senaste dagen först. Inom en dag ligger det senaste mötet först.
+- **Fästa anteckningar** ligger fortfarande överst. Saknar en fäst anteckning möte syns det på den orange ikonen i raden.
+- **Övriga vyer:** Mötesprotokoll, Skickade, Nyligen raderade och sökning grupperas som tidigare efter ändringsdatum.
+
+## Egna mappar ligger i Notes på disken (2026-11-05)
+
+- **Vad:** mappar som användaren skapar ligger nu i `Notes/` i filsystemet, så att strukturen i Finder och OneDrive stämmer med sidofältet. Mötesprotokoll och Nyligen raderade ligger kvar i roten.
+- **Flytt:** vid varje inläsning flyttas mappar som ligger bredvid `Notes` in i den. Det körs varje gång eftersom en annan Mac med en äldre version kan lägga till fler.
+- **Finns mappen på båda ställena:** filerna slås ihop. En identisk fil tas bort, och en annan anteckning med samma namn får ett nummer. Andra filer som krockar ligger kvar i den gamla mappen, som då inte tas bort.
+- **Misslyckas en flytt** läses mappen från sin gamla plats, och anteckningar flyttas när de sparas.
+- **Notes** går inte längre att byta namn på eller radera, eftersom den innehåller de andra mapparna.
+- **Äldre versioner:** en äldre version av appen på en annan Mac visar inte mapparna i `Notes/`.
+
+## Appikon (2026-11-05)
+
+- **Motiv:** ikonen är själva papperet, med ett gult fält upptill, två textrader och en orange bock som också läses som V:t i NotesV. Upplägget liknar Apple Notes med flit. Det skiljer sig genom bocken, de korta textraderna och att fältet saknar streckad kant. Innan appen distribueras utanför företaget bör ikonen granskas, eftersom den ligger nära Apples.
+- **Filer:** bilderna ligger i `Assets.xcassets/AppIcon.appiconset`, och de ritas av `Config/draw-app-icon.swift`.
+
 ## Kvar att göra
 
+- **Prova mappvalet med en riktig OneDrive-mapp.** Testerna använder tillfälliga mappar, så synk, filer som bara finns online och konfliktkopior från OneDrive är oprovade.
 - **Provkör med riktiga filer** från Outlook och Kalender. Exempelfilerna i testerna är skrivna för hand utifrån formatet.
 - **Kontrollera fältet för hand:** utseende, popover och dra och släpp. Claude kan inte ta skärmbilder här, och att släppa filer i verktygsfältet har inte provats.
 - **Promptinjektion:** beskrivningen i en `.ics`-fil kommer ofta från någon annan och skickas till AI-tjänsten. Effekten är begränsad, eftersom svaret bara blir en ny anteckning.

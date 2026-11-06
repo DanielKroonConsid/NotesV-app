@@ -150,63 +150,156 @@ struct MeetingTests {
         #expect(model.sourceNoteID == nil)
     }
 
-    @Test func marksANoteAsSent() async throws {
-        let (store, storage) = await makeStore()
+    /// Adds a protocol to the Meeting Protocols folder, attached to a new note.
+    private func addProtocol(to store: NoteStore) throws -> UUID {
         store.createNote()
         let noteID = try #require(store.selectedNoteID)
         store.updateDocument(NoteDocument(blocks: [.paragraph(.title, "Sync")]), of: noteID)
-        let modified = store.notes[noteID]?.modified
+        let minutes = Note(folderID: "Notes", sourceNoteID: noteID, document: NoteDocument(blocks: [.paragraph(.title, "Protokoll")]))
+        store.addProtocol(minutes)
+        return minutes.id
+    }
 
-        store.toggleSent(noteID)
-        #expect(store.notes[noteID]?.sentAt != nil)
-        #expect(store.notes[noteID]?.modified == modified)
-        let saved = try await waitForSave(of: noteID, in: storage)
+    /// Adds a note with a meeting, or without one if `start` is `nil`.
+    private func addNote(_ title: String, start: Date? = nil, to store: NoteStore) throws -> UUID {
+        store.createNote()
+        let noteID = try #require(store.selectedNoteID)
+        store.updateDocument(NoteDocument(blocks: [.paragraph(.title, RichText(plain: title))]), of: noteID)
+        if let start {
+            store.updateMeeting(MeetingDetails(title: title, start: start), of: noteID)
+        }
+        return noteID
+    }
+
+    @Test func marksAProtocolAsSent() async throws {
+        let (store, storage) = await makeStore()
+        let protocolID = try addProtocol(to: store)
+        let modified = store.notes[protocolID]?.modified
+
+        store.toggleSent(protocolID)
+        #expect(store.notes[protocolID]?.sentAt != nil)
+        #expect(store.notes[protocolID]?.modified == modified)
+        let saved = try await waitForSave(of: protocolID, in: storage)
         #expect(saved?.sentAt != nil)
+
+        store.toggleSent(protocolID)
+        #expect(store.notes[protocolID]?.sentAt == nil)
+    }
+
+    @Test func ordinaryNotesCantBeMarkedAsSent() async throws {
+        let (store, _) = await makeStore()
+        let noteID = try addNote("Sync", to: store)
 
         store.toggleSent(noteID)
         #expect(store.notes[noteID]?.sentAt == nil)
+        #expect(store.selectedNoteID == noteID)
     }
 
-    @Test func sentNotesMoveToTheSentView() async throws {
+    @Test func protocolsAreRecognizedWithoutALink() {
+        #expect(Note(folderID: NoteFolder.meetingProtocolsName).isMeetingProtocol)
+        #expect(Note(folderID: "Notes", sourceNoteID: UUID()).isMeetingProtocol)
+        #expect(!Note(folderID: "Notes").isMeetingProtocol)
+    }
+
+    @Test func aNoteMarkedByAnEarlierVersionIsBackInItsFolder() async throws {
+        let (store, storage) = await makeStore()
+        let note = Note(folderID: NoteFolder.defaultName, sentAt: .now, document: NoteDocument(blocks: [.paragraph(.title, "Sync")]))
+        try await storage.save(note)
+        await store.load()
+
+        #expect(store.visibleNotes.map(\.id) == [note.id])
+        #expect(store.noteCount(in: NoteFolder.sent.id) == 0)
+    }
+
+    @Test func sentProtocolsMoveToTheSentView() async throws {
         let (store, _) = await makeStore()
-        store.createNote()
-        let first = try #require(store.selectedNoteID)
-        store.updateDocument(NoteDocument(blocks: [.paragraph(.title, "First")]), of: first)
-        store.createNote()
-        let second = try #require(store.selectedNoteID)
-        store.updateDocument(NoteDocument(blocks: [.paragraph(.title, "Second")]), of: second)
+        let first = try addProtocol(to: store)
+        let second = try addProtocol(to: store)
+        store.selectedFolderID = NoteFolder.meetingProtocolsName
+        store.selectedNoteID = second
 
         store.toggleSent(second)
         #expect(store.visibleNotes.map(\.id) == [first])
         #expect(store.selectedNoteID == first)
-        #expect(store.noteCount(in: NoteFolder.defaultName) == 1)
+        #expect(store.noteCount(in: NoteFolder.meetingProtocolsName) == 1)
         #expect(store.noteCount(in: NoteFolder.sent.id) == 1)
         // The file stays in its folder.
-        #expect(store.notes[second]?.folderID == NoteFolder.defaultName)
+        #expect(store.notes[second]?.folderID == NoteFolder.meetingProtocolsName)
 
         store.selectedFolderID = NoteFolder.sent.id
         #expect(store.visibleNotes.map(\.id) == [second])
 
-        store.searchText = "Second"
-        #expect(store.visibleNotes.map(\.id) == [second])
+        store.searchText = "Protokoll"
+        #expect(store.visibleNotes.count == 2)
         store.searchText = ""
 
         store.toggleSent(second)
         #expect(store.visibleNotes.isEmpty)
-        store.selectedFolderID = NoteFolder.defaultName
+        store.selectedFolderID = NoteFolder.meetingProtocolsName
         #expect(store.visibleNotes.count == 2)
     }
 
-    @Test func aDeletedSentNoteIsInRecentlyDeleted() async throws {
+    @Test func aDeletedSentProtocolIsInRecentlyDeleted() async throws {
         let (store, _) = await makeStore()
-        store.createNote()
-        let noteID = try #require(store.selectedNoteID)
-        store.updateDocument(NoteDocument(blocks: [.paragraph(.title, "Sync")]), of: noteID)
-        store.toggleSent(noteID)
-        store.deleteNote(noteID)
+        let protocolID = try addProtocol(to: store)
+        store.toggleSent(protocolID)
+        store.deleteNote(protocolID)
 
         #expect(store.noteCount(in: NoteFolder.sent.id) == 0)
         #expect(store.noteCount(in: NoteFolder.recentlyDeletedName) == 1)
+    }
+
+    @Test func notesAreGroupedByMeetingDay() async throws {
+        let (store, _) = await makeStore()
+        let calendar = Calendar.current
+        let day = calendar.date(from: DateComponents(year: 2026, month: 3, day: 10, hour: 9))!
+        let earlierDay = calendar.date(byAdding: .day, value: -2, to: day)!
+        let older = try addNote("Older", start: earlierDay, to: store)
+        let morning = try addNote("Morning", start: day, to: store)
+        let afternoon = try addNote("Afternoon", start: day.addingTimeInterval(5 * 3600), to: store)
+        let plain = try addNote("Plain", to: store)
+
+        #expect(store.noteSections.map(\.id) == [
+            .noMeeting, .meetingDay(calendar.startOfDay(for: day)), .meetingDay(calendar.startOfDay(for: earlierDay)),
+        ])
+        #expect(store.noteSections.map { $0.notes.map(\.id) } == [[plain], [afternoon, morning], [older]])
+    }
+
+    @Test func selectionFollowsTheMeetingOrder() async throws {
+        let (store, _) = await makeStore()
+        let day = Date(timeIntervalSince1970: 1_792_486_800)
+        let latest = try addNote("Latest", start: day, to: store)
+        let earliest = try addNote("Earliest", start: day.addingTimeInterval(-7 * 86_400), to: store)
+        let middle = try addNote("Middle", start: day.addingTimeInterval(-86_400), to: store)
+
+        store.selectedNoteID = latest
+        store.deleteNote(latest)
+        #expect(store.selectedNoteID == middle)
+        store.deleteNote(middle)
+        #expect(store.selectedNoteID == earliest)
+    }
+
+    @Test func pinnedNotesStayOnTopOfTheMeetingGroups() async throws {
+        let (store, _) = await makeStore()
+        let pinned = try addNote("Pinned", to: store)
+        let plain = try addNote("Plain", to: store)
+        store.togglePin(pinned)
+
+        #expect(store.noteSections.map(\.id) == [.pinned, .noMeeting])
+        #expect(store.noteSections.map { $0.notes.map(\.id) } == [[pinned], [plain]])
+    }
+
+    @Test func onlyNoteFoldersAreGroupedByMeeting() async throws {
+        let (store, _) = await makeStore()
+        _ = try addNote("Sync", to: store)
+        _ = try addProtocol(to: store)
+
+        store.searchText = "Sync"
+        #expect(!store.noteSections.contains { $0.id == .noMeeting })
+        store.searchText = ""
+
+        store.selectedFolderID = NoteFolder.meetingProtocolsName
+        #expect(!store.noteSections.contains { $0.id == .noMeeting })
     }
 
     @Test func theSentViewComesBeforeRecentlyDeleted() async throws {
@@ -227,16 +320,14 @@ struct MeetingTests {
         #expect(!NoteFolder.sent.isSubfolder)
     }
 
-    @Test func revealFindsASentNote() async throws {
+    @Test func revealFindsASentProtocol() async throws {
         let (store, _) = await makeStore()
-        store.createNote()
-        let noteID = try #require(store.selectedNoteID)
-        store.updateDocument(NoteDocument(blocks: [.paragraph(.title, "Sync")]), of: noteID)
-        store.toggleSent(noteID)
+        let protocolID = try addProtocol(to: store)
+        store.toggleSent(protocolID)
 
-        store.reveal(noteID)
+        store.reveal(protocolID)
         #expect(store.selectedFolderID == NoteFolder.sent.id)
-        #expect(store.selectedNoteID == noteID)
+        #expect(store.selectedNoteID == protocolID)
     }
 
     @Test func countsUnsentProtocols() async throws {

@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 /// Stores notes as Markdown files in a folder on this Mac.
@@ -6,6 +7,8 @@ actor LocalStorageService: StorageService {
     private let fileManager = FileManager.default
     /// Where each loaded or saved note lives on disk.
     private var fileURLs: [UUID: URL] = [:]
+    /// Each note's file as NotesV last read or wrote it, to notice changes made by others.
+    private var fileHashes: [UUID: SHA256.Digest] = [:]
 
     init(rootURL: URL) {
         self.rootURL = rootURL
@@ -20,16 +23,19 @@ actor LocalStorageService: StorageService {
 
     func loadLibrary() async throws -> NoteLibrary {
         try fileManager.createDirectory(at: rootURL, withIntermediateDirectories: true)
+        moveFoldersIntoNotes()
+        let previousURLs = fileURLs
         fileURLs = [:]
+        fileHashes = [:]
 
         var folders: [NoteFolder] = []
         var notes: [Note] = []
-        let folderURLs = try fileManager.contentsOfDirectory(
-            at: rootURL, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
-        )
-        for folderURL in folderURLs where isDirectory(folderURL) {
+        // A folder that couldn't be moved into Notes is still read from its old place.
+        for folderURL in try directories(in: rootURL) + directories(in: notesFolderURL) {
             let folder = NoteFolder(name: folderURL.lastPathComponent)
-            folders.append(folder)
+            if !folders.contains(folder) {
+                folders.append(folder)
+            }
 
             let fileURLs = try fileManager.contentsOfDirectory(
                 at: folderURL,
@@ -37,7 +43,7 @@ actor LocalStorageService: StorageService {
                 options: [.skipsHiddenFiles]
             )
             for fileURL in fileURLs where fileURL.pathExtension.lowercased() == FileNaming.noteExtension {
-                if let note = try? readNote(at: fileURL, folderID: folder.id) {
+                if let note = try? readNote(at: fileURL, folderID: folder.id, previousURLs: previousURLs) {
                     notes.append(note)
                 }
             }
@@ -60,15 +66,22 @@ actor LocalStorageService: StorageService {
             targetURL = availableURL(in: folderURL, title: note.title, ignoring: currentURL)
         }
 
+        if let currentURL, let knownHash = fileHashes[note.id],
+           let fileOnDisk = try? Data(contentsOf: currentURL), SHA256.hash(data: fileOnDisk) != knownHash {
+            throw StorageError.changedOutsideApp(note.title)
+        }
+
         let data = Data(MarkdownCodec.encode(note).utf8)
         try data.write(to: targetURL, options: .atomic)
         if let currentURL, currentURL != targetURL {
             try? fileManager.removeItem(at: currentURL)
         }
         fileURLs[note.id] = targetURL
+        fileHashes[note.id] = SHA256.hash(data: data)
     }
 
     func deletePermanently(_ noteID: UUID) async throws {
+        fileHashes[noteID] = nil
         guard let fileURL = fileURLs.removeValue(forKey: noteID) else { return }
         if fileManager.fileExists(atPath: fileURL.path(percentEncoded: false)) {
             try fileManager.removeItem(at: fileURL)
@@ -112,18 +125,25 @@ actor LocalStorageService: StorageService {
 
     // MARK: - Helpers
 
-    private func readNote(at fileURL: URL, folderID: NoteFolder.ID) throws -> Note {
-        let text = try String(contentsOf: fileURL, encoding: .utf8)
+    private func readNote(at fileURL: URL, folderID: NoteFolder.ID, previousURLs: [UUID: URL]) throws -> Note {
+        let data = try Data(contentsOf: fileURL)
+        guard let text = String(data: data, encoding: .utf8) else {
+            throw CocoaError(.fileReadInapplicableStringEncoding)
+        }
         let decoded = MarkdownCodec.decode(text)
         let values = try? fileURL.resourceValues(forKeys: [.creationDateKey, .contentModificationDateKey])
         let fileModified = values?.contentModificationDate ?? .nowWholeSeconds
 
-        // A copied file keeps the same id, so give the copy a new one.
-        var id = decoded.fields?.id ?? UUID()
-        if fileURLs[id] != nil {
+        // A file keeps its id between loads. A copied file has the same id as the original,
+        // so the copy gets a new one.
+        let knownID = previousURLs.first { $0.value.standardizedFileURL == fileURL.standardizedFileURL }?.key
+        var id = knownID ?? decoded.fields?.id ?? UUID()
+        let originalExists = previousURLs[id].map { fileManager.fileExists(atPath: $0.path(percentEncoded: false)) } ?? false
+        if knownID == nil, fileURLs[id] != nil || originalExists {
             id = UUID()
         }
         fileURLs[id] = fileURL
+        fileHashes[id] = SHA256.hash(data: data)
 
         return Note(
             id: id,
@@ -138,8 +158,68 @@ actor LocalStorageService: StorageService {
         )
     }
 
+    private var notesFolderURL: URL {
+        rootURL.appending(path: NoteFolder.defaultName, directoryHint: .isDirectory)
+    }
+
+    /// The user's folders are inside Notes. Notes and the system folders are in the root.
     private func url(forFolder folderID: NoteFolder.ID) -> URL {
-        rootURL.appending(path: folderID, directoryHint: .isDirectory)
+        let parentURL = NoteFolder(name: folderID).isSubfolder ? notesFolderURL : rootURL
+        return parentURL.appending(path: folderID, directoryHint: .isDirectory)
+    }
+
+    private func directories(in url: URL) throws -> [URL] {
+        guard fileManager.fileExists(atPath: url.path(percentEncoded: false)) else { return [] }
+        return try fileManager.contentsOfDirectory(
+            at: url, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles]
+        ).filter(isDirectory)
+    }
+
+    /// Earlier versions kept the user's folders next to Notes, and a Mac that still runs one can
+    /// add more, so this runs on every load.
+    private func moveFoldersIntoNotes() {
+        let folderURLs = (try? directories(in: rootURL)) ?? []
+        for folderURL in folderURLs where NoteFolder(name: folderURL.lastPathComponent).isSubfolder {
+            let targetURL = url(forFolder: folderURL.lastPathComponent)
+            do {
+                try fileManager.createDirectory(at: notesFolderURL, withIntermediateDirectories: true)
+                if fileManager.fileExists(atPath: targetURL.path(percentEncoded: false)) {
+                    try mergeFolder(folderURL, into: targetURL)
+                } else {
+                    try fileManager.moveItem(at: folderURL, to: targetURL)
+                }
+            } catch {
+                continue
+            }
+        }
+    }
+
+    /// Moves the files over. Nothing is lost: an identical file is dropped, and a different note
+    /// with the same name gets a number. The folder is removed only if nothing is left in it.
+    private func mergeFolder(_ folderURL: URL, into targetURL: URL) throws {
+        let itemURLs = try fileManager.contentsOfDirectory(
+            at: folderURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+        )
+        for itemURL in itemURLs {
+            let name = itemURL.lastPathComponent
+            let candidateURL = targetURL.appending(path: name)
+            if !fileManager.fileExists(atPath: candidateURL.path(percentEncoded: false)) {
+                try fileManager.moveItem(at: itemURL, to: candidateURL)
+            } else if fileManager.contentsEqual(
+                atPath: itemURL.path(percentEncoded: false), andPath: candidateURL.path(percentEncoded: false)
+            ) {
+                try fileManager.removeItem(at: itemURL)
+            } else if itemURL.pathExtension.lowercased() == FileNaming.noteExtension {
+                let title = FileNaming.baseName(ofNoteFileName: name)
+                try fileManager.moveItem(at: itemURL, to: availableURL(in: targetURL, title: title, ignoring: nil))
+            }
+        }
+        let remaining = try fileManager.contentsOfDirectory(
+            at: folderURL, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+        )
+        if remaining.isEmpty {
+            try fileManager.removeItem(at: folderURL)
+        }
     }
 
     private func availableURL(in folderURL: URL, title: String, ignoring ignoredURL: URL?) -> URL {

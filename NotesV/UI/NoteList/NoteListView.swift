@@ -4,6 +4,8 @@ import SwiftUI
 struct NoteListView: View {
     @Environment(NoteStore.self) private var store
 
+    private static let rowHeight: CGFloat = 49
+
     var body: some View {
         @Bindable var store = store
 
@@ -20,6 +22,8 @@ struct NoteListView: View {
                 }
             }
         }
+        // The list can keep its default row height for a row, which cuts off the second line.
+        .environment(\.defaultMinListRowHeight, Self.rowHeight)
         .overlay {
             if store.isLoaded, store.visibleNotes.isEmpty {
                 if store.isSearching {
@@ -63,8 +67,10 @@ struct NoteListView: View {
                 store.togglePin(note.id)
             }
         }
-        Button(note.sentAt == nil ? "Mark as Sent" : "Mark as Not Sent") {
-            store.toggleSent(note.id)
+        if note.isMeetingProtocol {
+            Button(note.isSent ? "Mark as Not Sent" : "Mark as Sent") {
+                store.toggleSent(note.id)
+            }
         }
         Menu("Move To") {
             ForEach(store.folders.filter { $0.kind == .regular && $0.id != note.folderID }) { folder in
@@ -97,7 +103,19 @@ private struct SectionHeader: View {
             Text("Previous 30 Days")
         case .date(.month(let year, let month)):
             Text(verbatim: monthTitle(year: year, month: month))
+        case .noMeeting:
+            Label("No Meeting Info", systemImage: MissingMeetingMark.symbol)
+                .foregroundStyle(.orange)
+        case .meetingDay(let day):
+            meetingDayTitle(day)
         }
+    }
+
+    private func meetingDayTitle(_ day: Date) -> Text {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(day) { return Text("Today") }
+        if calendar.isDateInYesterday(day) { return Text("Yesterday") }
+        return Text(verbatim: day.formatted(.dateTime.weekday(.wide).day().month(.wide).year()))
     }
 
     private func monthTitle(year: Int, month: Int) -> String {
@@ -110,14 +128,14 @@ private struct SectionHeader: View {
     }
 }
 
-/// Marks the note as sent, or removes the marking.
+/// Marks a protocol as sent, or removes the marking. Ordinary notes can't be marked.
 struct SentButton: View {
     let note: Note?
 
     @Environment(NoteStore.self) private var store
 
     var body: some View {
-        let isSent = note?.sentAt != nil
+        let isSent = note?.isSent == true
         Button {
             if let note {
                 store.toggleSent(note.id)
@@ -126,6 +144,7 @@ struct SentButton: View {
             Label(isSent ? "Mark as Not Sent" : "Mark as Sent", systemImage: isSent ? "paperplane.fill" : "paperplane")
         }
         .help(Text(isSent ? "Mark as Not Sent" : "Mark as Sent"))
+        .disabled(note?.isMeetingProtocol != true)
     }
 }
 
@@ -139,6 +158,18 @@ struct SentMark: View {
     }
 }
 
+/// Shows that a note has no meeting info.
+private struct MissingMeetingMark: View {
+    static let symbol = "calendar.badge.exclamationmark"
+
+    var body: some View {
+        Image(systemName: Self.symbol)
+            .foregroundStyle(.orange)
+            .accessibilityLabel(Text("No Meeting Info"))
+            .help(Text("No Meeting Info"))
+    }
+}
+
 struct NoteRowView: View {
     let note: Note
 
@@ -148,11 +179,13 @@ struct NoteRowView: View {
                 if note.meeting != nil {
                     Image(systemName: "calendar")
                         .foregroundStyle(.secondary)
+                } else if !note.isMeetingProtocol {
+                    MissingMeetingMark()
                 }
                 title
                     .fontWeight(.semibold)
                     .lineLimit(1)
-                if note.sentAt != nil {
+                if note.isSent {
                     Spacer(minLength: 4)
                     SentMark()
                 }
