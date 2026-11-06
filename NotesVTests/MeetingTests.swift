@@ -302,6 +302,52 @@ struct MeetingTests {
         #expect(!store.noteSections.contains { $0.id == .noMeeting })
     }
 
+    private let invited = MeetingDetails(
+        title: "Sync", start: Date(timeIntervalSince1970: 1_792_486_800),
+        organizer: "Ada Ek", attendees: ["Ada Ek", "Bo Berg", "Cia Lund"]
+    )
+
+    @Test func attendanceCoversEveryoneMentioned() {
+        let minutes = MeetingProtocol(language: "sv", attendeesPresent: ["Bo Berg", "Gäst"], attendeesAbsent: ["Dan Ås"])
+        #expect(minutes.attendanceCandidates(for: invited) == ["Ada Ek", "Bo Berg", "Cia Lund", "Gäst", "Dan Ås"])
+    }
+
+    @Test func anyoneLeftOutCountsAsAbsent() {
+        var minutes = MeetingProtocol(language: "sv", attendeesPresent: ["Bo Berg"], attendeesAbsent: ["Bo Berg"])
+        minutes.normalizeAttendance(for: invited)
+        #expect(minutes.attendeesPresent == ["Bo Berg"])
+        #expect(minutes.attendeesAbsent == ["Ada Ek", "Cia Lund"])
+    }
+
+    @Test func tickingMovesAPersonBetweenTheLists() {
+        var minutes = MeetingProtocol(language: "sv", attendeesPresent: ["Bo Berg"], attendeesAbsent: ["Cia Lund"])
+
+        minutes.setAttended(false, name: "Bo Berg")
+        #expect(minutes.attendeesPresent.isEmpty)
+        #expect(minutes.attendeesAbsent == ["Cia Lund", "Bo Berg"])
+
+        minutes.setAttended(true, name: "Cia Lund")
+        #expect(minutes.attendeesPresent == ["Cia Lund"])
+        #expect(minutes.attendeesAbsent == ["Bo Berg"])
+    }
+
+    @Test func aReviewIsNeededForPeopleOrActionItems() {
+        let alone = MeetingDetails(title: "Sync", start: .now)
+        #expect(MeetingProtocol(language: "sv").needsReview(for: invited))
+        #expect(MeetingProtocol(language: "sv", actionItems: [.init(task: "Ring")]).needsReview(for: alone))
+        #expect(!MeetingProtocol(language: "sv").needsReview(for: alone))
+    }
+
+    @Test func unmarkedPeopleAppearUnderAbsentInTheProtocol() throws {
+        var minutes = MeetingProtocol(language: "sv", attendeesPresent: ["Ada Ek", "Bo Berg", "Cia Lund"])
+        minutes.setAttended(false, name: "Cia Lund")
+        let text = ProtocolFormatter.document(for: minutes, meeting: invited).plainText
+
+        let absent = try #require(text.range(of: "Frånvarande"))
+        let cia = try #require(text.range(of: "Cia Lund"))
+        #expect(absent.lowerBound < cia.lowerBound)
+    }
+
     @Test func theSentViewComesBeforeRecentlyDeleted() async throws {
         let (store, _) = await makeStore()
         store.createNote()
