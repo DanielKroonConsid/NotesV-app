@@ -62,9 +62,14 @@ struct AIEndpointConfiguration: Codable, Hashable, Sendable {
         (try? validatedBaseURL().absoluteString) ?? baseURL
     }
 
-    /// Whether data stays on this Mac.
+    /// Whether the server is on this Mac or the local network, so that it may not need an API key.
     var isLocal: Bool {
         (try? validatedBaseURL()).flatMap(\.host).map(Self.isLocalHost) ?? false
+    }
+
+    /// Whether data stays on this Mac. A `.local` server is another machine on the network.
+    var isOnThisMac: Bool {
+        isLocal && (try? validatedBaseURL())?.host?.lowercased().hasSuffix(".local") == false
     }
 
     /// The base URL without a trailing slash. Plain `http` is only allowed for local servers.

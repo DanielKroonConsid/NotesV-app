@@ -191,14 +191,15 @@ enum FrontMatter {
 
     private static func quoted(_ value: String) -> String {
         var result = "\""
-        for character in value {
-            switch character {
+        // Scalars, because "\r\n" is a single Character and would otherwise end the line.
+        for scalar in value.unicodeScalars {
+            switch scalar {
             case "\"": result += "\\\""
             case "\\": result += "\\\\"
             case "\n": result += "\\n"
             case "\t": result += "\\t"
             case "\r": continue
-            default: result.append(character)
+            default: result.unicodeScalars.append(scalar)
             }
         }
         return result + "\""

@@ -21,6 +21,10 @@ struct AIEndpointConfigurationTests {
         }
         #expect(AIEndpointConfiguration(preset: .lmStudio).isLocal)
         #expect(!AIEndpointConfiguration(preset: .openAI).isLocal)
+        #expect(AIEndpointConfiguration(preset: .lmStudio).isOnThisMac)
+        let networkServer = AIEndpointConfiguration(preset: .custom, baseURL: "http://studio.local:1234/v1")
+        #expect(networkServer.isLocal)
+        #expect(!networkServer.isOnThisMac)
     }
 
     @Test func presetsChooseTheAuthHeader() {

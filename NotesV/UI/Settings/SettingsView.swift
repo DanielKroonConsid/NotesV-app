@@ -66,7 +66,7 @@ struct AISettingsView: View {
 
             Section {
                 Label {
-                    if settings.configuration.isLocal {
+                    if settings.configuration.isOnThisMac {
                         Text("Meeting details and notes are sent to a server on this Mac and don’t leave it.")
                     } else {
                         Text("Meeting details and notes are sent to the server above. They leave your Microsoft 365 organization.")

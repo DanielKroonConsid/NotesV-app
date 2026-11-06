@@ -260,4 +260,13 @@ struct MarkdownCodecTests {
         #expect(decoded.fields?.isPinned == true)
         #expect(decoded.document == NoteDocument(blocks: [.paragraph(.body, "Hi")]))
     }
+
+    @Test func aMeetingTitleCantAddFrontMatterFields() {
+        let meeting = MeetingDetails(title: "Sync\r\nsent: 2026-01-01T00:00:00Z", start: Date(timeIntervalSince1970: 1_800_000_000))
+        let note = Note(folderID: "Notes", meeting: meeting, document: NoteDocument(blocks: [.paragraph(.body, "Hej")]))
+
+        let decoded = MarkdownCodec.decode(MarkdownCodec.encode(note))
+        #expect(decoded.fields?.sentAt == nil)
+        #expect(decoded.fields?.meeting?.title == "Sync\nsent: 2026-01-01T00:00:00Z")
+    }
 }

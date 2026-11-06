@@ -31,44 +31,58 @@ func render(size: Int) -> Data {
     ctx.scaleBy(x: CGFloat(size) / 1024, y: CGFloat(size) / 1024)
     ctx.setShouldAntialias(true)
 
-    // Body with the system-style drop shadow. The icon itself is the sheet of paper.
+    // Body with the system-style drop shadow.
     let body = superellipse(CGRect(x: 100, y: 100, width: 824, height: 824))
     ctx.saveGState()
     ctx.setShadow(offset: CGSize(width: 0, height: -12), blur: 28, color: color(0, 0.3))
-    ctx.addPath(body); ctx.setFillColor(color(0xFBFAF6)); ctx.fillPath()
+    ctx.addPath(body); ctx.setFillColor(color(0xF5B800)); ctx.fillPath()
     ctx.restoreGState()
 
     ctx.saveGState()
     ctx.addPath(body); ctx.clip()
-    gradient(ctx, [color(0xFFFFFF), color(0xF1EEE6)], from: CGPoint(x: 512, y: 924), to: CGPoint(x: 512, y: 100))
+    gradient(ctx, [color(0xFFDD55), color(0xF7B500)], from: CGPoint(x: 512, y: 924), to: CGPoint(x: 512, y: 100))
 
-    // The yellow band, with a soft edge instead of a perforation.
-    let bandBottom: CGFloat = 716
+    // The page, with a folded corner at the top right.
+    let (l, r, t, b, fold): (CGFloat, CGFloat, CGFloat, CGFloat, CGFloat) = (262, 762, 826, 198, 136)
+    let page = CGMutablePath()
+    page.move(to: CGPoint(x: l + 44, y: b))
+    page.addLine(to: CGPoint(x: r - 44, y: b))
+    page.addQuadCurve(to: CGPoint(x: r, y: b + 44), control: CGPoint(x: r, y: b))
+    page.addLine(to: CGPoint(x: r, y: t - fold))
+    page.addLine(to: CGPoint(x: r - fold, y: t))
+    page.addLine(to: CGPoint(x: l + 44, y: t))
+    page.addQuadCurve(to: CGPoint(x: l, y: t - 44), control: CGPoint(x: l, y: t))
+    page.addLine(to: CGPoint(x: l, y: b + 44))
+    page.addQuadCurve(to: CGPoint(x: l + 44, y: b), control: CGPoint(x: l, y: b))
+    page.closeSubpath()
     ctx.saveGState()
-    ctx.setShadow(offset: CGSize(width: 0, height: -6), blur: 14, color: color(0x7A5200, 0.28))
-    ctx.setFillColor(color(0xF9C21A))
-    ctx.fill(CGRect(x: 0, y: bandBottom, width: 1024, height: 324))
-    ctx.restoreGState()
-    ctx.saveGState()
-    ctx.clip(to: CGRect(x: 0, y: bandBottom, width: 1024, height: 324))
-    gradient(ctx, [color(0xFFDD55), color(0xF7B500)], from: CGPoint(x: 512, y: 924), to: CGPoint(x: 512, y: bandBottom))
+    ctx.setShadow(offset: CGSize(width: 0, height: -14), blur: 30, color: color(0x7A5200, 0.35))
+    ctx.addPath(page); ctx.setFillColor(color(0xFBFAF6)); ctx.fillPath()
     ctx.restoreGState()
 
-    // Two short text lines, like a few meeting bullets.
-    ctx.setStrokeColor(color(0xBDB8AB)); ctx.setLineCap(.round); ctx.setLineWidth(26)
-    for (y, end) in [(CGFloat(628), CGFloat(700)), (558, CGFloat(560))] {
-        ctx.move(to: CGPoint(x: 214, y: y)); ctx.addLine(to: CGPoint(x: end, y: y)); ctx.strokePath()
+    let flap = CGMutablePath()
+    flap.move(to: CGPoint(x: r - fold, y: t))
+    flap.addLine(to: CGPoint(x: r - fold, y: t - fold + 26))
+    flap.addQuadCurve(to: CGPoint(x: r - fold + 26, y: t - fold), control: CGPoint(x: r - fold, y: t - fold))
+    flap.addLine(to: CGPoint(x: r, y: t - fold))
+    flap.closeSubpath()
+    ctx.addPath(flap); ctx.setFillColor(color(0xE9E2CF)); ctx.fillPath()
+
+    // Short text lines, like a few meeting bullets.
+    ctx.setStrokeColor(color(0xB8B2A4)); ctx.setLineCap(.round); ctx.setLineWidth(30)
+    for (y, end) in [(CGFloat(712), CGFloat(590)), (632, 662)] {
+        ctx.move(to: CGPoint(x: l + 66, y: y)); ctx.addLine(to: CGPoint(x: end, y: y)); ctx.strokePath()
     }
 
     // The checkmark, which also reads as the V in NotesV.
     let check = CGMutablePath()
-    check.move(to: CGPoint(x: 366, y: 366))
-    check.addLine(to: CGPoint(x: 462, y: 236))
-    check.addLine(to: CGPoint(x: 660, y: 476))
+    check.move(to: CGPoint(x: 366, y: 450))
+    check.addLine(to: CGPoint(x: 472, y: 306))
+    check.addLine(to: CGPoint(x: 668, y: 548))
     ctx.addPath(check)
-    ctx.setLineWidth(70); ctx.setLineJoin(.round); ctx.setLineCap(.round)
+    ctx.setLineWidth(76); ctx.setLineJoin(.round); ctx.setLineCap(.round)
     ctx.replacePathWithStrokedPath(); ctx.clip()
-    gradient(ctx, [color(0xF9A11B), color(0xE5620F)], from: CGPoint(x: 512, y: 500), to: CGPoint(x: 512, y: 200))
+    gradient(ctx, [color(0xF9A11B), color(0xE5620F)], from: CGPoint(x: 512, y: 560), to: CGPoint(x: 512, y: 280))
     ctx.restoreGState()
 
     let rep = NSBitmapImageRep(cgImage: ctx.makeImage()!)

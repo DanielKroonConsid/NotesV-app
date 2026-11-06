@@ -276,6 +276,11 @@ struct SubfolderStorageTests {
         try text.write(to: url, atomically: true, encoding: .utf8)
     }
 
+    /// A note file as NotesV writes it.
+    private func note(_ body: String) -> String {
+        "---\nid: \(UUID().uuidString)\n---\n\(body)"
+    }
+
     private func exists(_ path: String) -> Bool {
         FileManager.default.fileExists(atPath: rootURL.appending(path: path).path(percentEncoded: false))
     }
@@ -296,11 +301,11 @@ struct SubfolderStorageTests {
     }
 
     @Test func existingFoldersMoveIntoNotes() async throws {
-        try write("# Sync\n", to: "Smekab/Sync.md")
-        try write("# VAS\n", to: "VAS/VAS.md")
-        try write("# Plain\n", to: "Notes/Plain.md")
-        try write("# Minutes\n", to: "Meeting Protocols/Minutes.md")
-        try write("# Old\n", to: "Recently Deleted/Old.md")
+        try write(note("# Sync\n"), to: "Smekab/Sync.md")
+        try write(note("# VAS\n"), to: "VAS/VAS.md")
+        try write(note("# Plain\n"), to: "Notes/Plain.md")
+        try write(note("# Minutes\n"), to: "Meeting Protocols/Minutes.md")
+        try write(note("# Old\n"), to: "Recently Deleted/Old.md")
 
         let library = try await LocalStorageService(rootURL: rootURL).loadLibrary()
 
@@ -315,11 +320,12 @@ struct SubfolderStorageTests {
     }
 
     @Test func aFolderInBothPlacesIsMergedWithoutLosingNotes() async throws {
-        try write("# Sync\n\nFrom the old place\n", to: "Smekab/Sync.md")
-        try write("# Same\n", to: "Smekab/Same.md")
-        try write("# New\n", to: "Smekab/New.md")
-        try write("# Sync\n\nFrom the new place\n", to: "Notes/Smekab/Sync.md")
-        try write("# Same\n", to: "Notes/Smekab/Same.md")
+        try write(note("# Sync\n\nFrom the old place\n"), to: "Smekab/Sync.md")
+        let same = note("# Same\n")
+        try write(same, to: "Smekab/Same.md")
+        try write(note("# New\n"), to: "Smekab/New.md")
+        try write(note("# Sync\n\nFrom the new place\n"), to: "Notes/Smekab/Sync.md")
+        try write(same, to: "Notes/Smekab/Same.md")
 
         let library = try await LocalStorageService(rootURL: rootURL).loadLibrary()
 
@@ -331,9 +337,9 @@ struct SubfolderStorageTests {
     }
 
     @Test func aFolderThatCantBeEmptiedKeepsItsOtherFiles() async throws {
-        try write("# Sync\n", to: "Smekab/Sync.md")
+        try write(note("# Sync\n"), to: "Smekab/Sync.md")
         try write("one", to: "Smekab/data.txt")
-        try write("# Other\n", to: "Notes/Smekab/Other.md")
+        try write(note("# Other\n"), to: "Notes/Smekab/Other.md")
         try write("two", to: "Notes/Smekab/data.txt")
 
         let library = try await LocalStorageService(rootURL: rootURL).loadLibrary()
@@ -341,6 +347,19 @@ struct SubfolderStorageTests {
         #expect(exists("Smekab/data.txt"))
         #expect(library.notes.count == 2)
         #expect(library.folders.filter { $0.name == "Smekab" }.count == 1)
+    }
+
+    @Test func foldersThatArentNoteFoldersStayWhereTheyAre() async throws {
+        try write("# Read me\n", to: "Source/README.md")
+        try write("let a = 1", to: "Source/main.swift")
+        try FileManager.default.createDirectory(at: rootURL.appending(path: "Empty"), withIntermediateDirectories: true)
+
+        _ = try await LocalStorageService(rootURL: rootURL).loadLibrary()
+
+        #expect(exists("Source/README.md"))
+        #expect(exists("Source/main.swift"))
+        #expect(!exists("Notes/Source"))
+        #expect(exists("Notes/Empty"))
     }
 
     @Test func movingToAnEmptyFolderKeepsSubfolders() async throws {
