@@ -14,7 +14,7 @@ NotesV is a native Mac app and needs no Microsoft 365 account or sign-in.
 - **Task overview:** tabs for your tasks, other people's, all, a backlog of tasks for later and completed tasks. Sort by due date, meeting or owner, and open the protocol a task came from. Tasks can have a note and subtasks. See the [task guide](documents/Uppgifter.md), in Swedish.
 - **Any OpenAI-compatible server:** OpenAI, Azure OpenAI, OpenRouter, Ollama, LM Studio or any other base URL. With Ollama or LM Studio, meeting data stays on your Mac.
 - **Plain Markdown files:** each note is one `.md` file with YAML front matter, readable in any Markdown editor.
-- **Your own storage folder:** keep the notes in the app's container, or pick a folder, for example one that the OneDrive app syncs.
+- **Your own storage folder:** keep the notes in the app's container, or pick a folder, for example one that the OneDrive app syncs. Notes, tasks and a `settings.json` with your settings, without API keys, are all in that folder, so a new Mac can get them back.
 - **Swedish and English:** the app is available in both languages. Protocols are written in the language of your notes unless you pick one.
 
 ## Tech stack

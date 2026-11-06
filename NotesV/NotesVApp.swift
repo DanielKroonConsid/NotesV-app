@@ -32,6 +32,7 @@ struct NotesVApp: App {
                 .environment(appDelegate.aiSettings)
                 .environment(appDelegate.storageSettings)
                 .environment(appDelegate.profileSettings)
+                .environment(appDelegate.settingsBackup)
                 .environment(appDelegate.store)
         }
     }
@@ -43,6 +44,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let aiSettings: AISettings
     let storageSettings: StorageSettings
     let profileSettings: ProfileSettings
+    let settingsBackup: SettingsBackup
     let protocolGeneration = ProtocolGenerationModel()
     let meetingImport = MeetingImportModel()
 
@@ -64,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             storageSettings = StorageSettings(defaultRootURL: rootURL)
         }
         store = NoteStore(storage: LocalStorageService(rootURL: storageSettings.rootURL))
+        settingsBackup = SettingsBackup(aiSettings: aiSettings, profile: profileSettings, storage: storageSettings)
         super.init()
     }
 
@@ -71,6 +74,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSWindow.allowsAutomaticWindowTabbing = false
         Task {
             await store.load()
+            settingsBackup.start()
             if storageSettings.isFolderMissing {
                 store.errorMessage = String(localized: "The notes folder can’t be found. NotesV is using the folder on this Mac until you choose a new one in Settings.")
             }
@@ -86,6 +90,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
             await store.prepareForTermination()
+            settingsBackup.writeNow()
             sender.reply(toApplicationShouldTerminate: true)
         }
         return .terminateLater

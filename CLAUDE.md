@@ -92,6 +92,7 @@ By default they are in the app's container. In Settings the user can pick a fold
 - The notes go in a `NotesV` subfolder of the picked folder, so other contents never show up as note folders.
 - `StorageSettings` saves a security-scoped bookmark, so the folder survives restarts and renames. If the folder is gone, the app uses the container and asks the user to pick a new one.
 - Changing folder copies the notes. The old files are kept, and a note that already exists in the new folder is left as it is.
+- `settings.json` in the root of the notes folder holds a copy of the AI server, the model choice and the user's names (`SettingsFile`, `SettingsBackup`), so a new Mac can get them back. It never holds API keys. The folder can be shared, so the app only reads the file after showing the user the server address and getting their OK.
 - Changes made outside the app are never overwritten. `LocalStorageService` compares a hash of the file before saving and throws `changedOutsideApp`. `NoteStore` then keeps both versions as separate notes. Files are read again when the app becomes active.
 
 ### Markdown format
@@ -164,7 +165,7 @@ Settings:
   - choose the model ("Latest" by default) and test the connection
   - pick the storage folder
   - enter the names the user goes by, which pre-select them when reviewing tasks
-- Remember the server, the model choice and the folder's bookmark in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
+- Remember the server, the model choice, the user's names and the folder's bookmark in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
 
 ## Releases
 
@@ -172,7 +173,7 @@ Pushing a tag like `v0.1.0` makes `.github/workflows/release.yml` test the app, 
 
 ## Security and secrets
 
-- **AI API keys:** store them **only in the macOS Keychain** (one per preset, via `KeychainService`). Never in `UserDefaults`, files, logs or source code, and never in the notes folder.
+- **AI API keys:** store them **only in the macOS Keychain** (one per preset, via `KeychainService`). Never in `UserDefaults`, files, logs or source code, and never in the notes folder or `settings.json`.
 - Never commit API keys or other secrets.
 
 ## Architecture guidelines

@@ -871,6 +871,16 @@
         }
       }
     },
+    "Meeting data will be sent to %@. Only restore if you recognize this server. Enter the API key again afterwards.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mötesdata kommer att skickas till %@. Återställ bara om du känner igen servern. Ange API-nyckeln igen efteråt."
+          }
+        }
+      }
+    },
     "Meeting details and notes are sent to a server on this Mac and don’t leave it.": {
       "localizations": {
         "sv": {
@@ -1407,6 +1417,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Krävs"
+          }
+        }
+      }
+    },
+    "Restore": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ"
+          }
+        }
+      }
+    },
+    "Restore Settings…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställ inställningar…"
+          }
+        }
+      }
+    },
+    "Restore settings from the notes folder?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Återställa inställningar från anteckningsmappen?"
           }
         }
       }
@@ -2007,6 +2047,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Du kan inte ångra den här åtgärden."
+          }
+        }
+      }
+    },
+    "Your settings are also saved as settings.json in the notes folder, so you can get them back on a new Mac. API keys are never saved there, so you enter them again.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dina inställningar sparas också som settings.json i anteckningsmappen, så att du kan få tillbaka dem på en ny Mac. API-nycklar sparas aldrig där, så dem anger du igen."
           }
         }
       }

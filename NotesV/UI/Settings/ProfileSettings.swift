@@ -7,8 +7,14 @@ import Observation
 final class ProfileSettings {
     /// The names the user goes by in protocols, separated by commas.
     var namesText: String {
-        didSet { defaults.set(namesText, forKey: Self.namesKey) }
+        didSet {
+            defaults.set(namesText, forKey: Self.namesKey)
+            onChange?()
+        }
     }
+
+    /// Called when the settings have changed, so they can be backed up.
+    @ObservationIgnored var onChange: (() -> Void)?
 
     @ObservationIgnored private let defaults: UserDefaults
     private static let namesKey = "profile.names"

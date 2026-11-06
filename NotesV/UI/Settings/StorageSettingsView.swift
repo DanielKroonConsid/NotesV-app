@@ -5,6 +5,7 @@ import SwiftUI
 struct StorageSettingsView: View {
     @Environment(StorageSettings.self) private var settings
     @Environment(NoteStore.self) private var store
+    @Environment(SettingsBackup.self) private var backup
 
     var body: some View {
         Form {
@@ -24,7 +25,10 @@ struct StorageSettingsView: View {
                     Button("Choose Folder…", action: chooseFolder)
                     if settings.folderURL != nil {
                         Button("Use This Mac") {
-                            Task { await settings.useThisMac(store: store) }
+                            Task {
+                                await settings.useThisMac(store: store)
+                                backup.writeNow()
+                            }
                         }
                     }
                     if settings.isMoving {
@@ -48,8 +52,36 @@ struct StorageSettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            Section {
+                Button("Restore Settings…") {
+                    backup.offerRestore()
+                }
+                .disabled(backup.stored == nil)
+                if let errorMessage = backup.errorMessage {
+                    Label {
+                        Text(verbatim: errorMessage)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
+                }
+            } footer: {
+                Text("Your settings are also saved as settings.json in the notes folder, so you can get them back on a new Mac. API keys are never saved there, so you enter them again.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
+        .alert(
+            "Restore settings from the notes folder?",
+            isPresented: Binding(get: { backup.pendingRestore != nil }, set: { if !$0 { backup.cancelRestore() } }),
+            presenting: backup.pendingRestore
+        ) { _ in
+            Button("Cancel", role: .cancel) { backup.cancelRestore() }
+            Button("Restore") { backup.restore() }
+        } message: { snapshot in
+            Text("Meeting data will be sent to \(snapshot.ai.baseURL). Only restore if you recognize this server. Enter the API key again afterwards.")
+        }
     }
 
     private func chooseFolder() {
@@ -61,6 +93,9 @@ struct StorageSettingsView: View {
         panel.prompt = String(localized: "Choose")
         panel.message = String(localized: "Choose where to store your notes. NotesV creates a folder named NotesV there.")
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        Task { await settings.useFolder(url, store: store) }
+        Task {
+            await settings.useFolder(url, store: store)
+            backup.folderDidChange()
+        }
     }
 }

@@ -132,6 +132,10 @@ tasks:
 
 `source` är originalraden i protokollet. Det är så appen vet att en checkbox redan är behandlad. `status` är `open`, `done` eller `ignored`, och en uppgift i backloggen har även `backlog: true`.
 
+För att uppgifterna ska finnas kvar om datorn havererar måste du ha valt en lagringsmapp som säkerhetskopieras eller synkas, under **Inställningar → Lagring**. Ligger anteckningarna kvar i appens egen mapp finns de bara på den här Macen.
+
+På en ny Mac väljer du samma mapp under **Inställningar → Lagring**. Då kommer anteckningar, protokoll och uppgifter tillbaka, och appen frågar om den ska återställa inställningarna från `settings.json`. API-nyckeln finns inte i filen, så den anger du igen.
+
 Inget av detta hamnar i protokollets text. Noteringar och underuppgifter följer inte med **Copy for Email** och skickas inte till AI-tjänsten. Ligger filerna i en synkad mapp följer de däremot med dit.
 
 ## Bra att veta
