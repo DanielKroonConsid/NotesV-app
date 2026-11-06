@@ -6,6 +6,10 @@ struct ContentView: View {
     @Environment(ProtocolGenerationModel.self) private var protocolGeneration
     @Environment(\.openWindow) private var openWindow
 
+    private var showsTasks: Bool {
+        store.selectedFolderID == NoteFolder.actionItems.id
+    }
+
     var body: some View {
         @Bindable var store = store
 
@@ -13,8 +17,15 @@ struct ContentView: View {
             FolderSidebarView()
                 .navigationSplitViewColumnWidth(min: 160, ideal: 200, max: 320)
         } content: {
-            NoteListView()
-                .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 420)
+            Group {
+                if showsTasks {
+                    ActionItemListView()
+                } else {
+                    NoteListView()
+                }
+            }
+            // The task tabs need more room than the note list.
+            .navigationSplitViewColumnWidth(min: showsTasks ? 360 : 220, ideal: showsTasks ? 380 : 280, max: showsTasks ? 480 : 420)
         } detail: {
             NoteDetailView()
         }

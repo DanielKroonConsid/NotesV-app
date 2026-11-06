@@ -59,6 +59,71 @@ final class NoteStore {
 
     // MARK: - Derived state
 
+    /// The notes the task overview covers.
+    private var taskNotes: [Note] {
+        notes.values.filter { note in
+            note.holdsManualTasks || (note.isMeetingProtocol && note.folderID != NoteFolder.recentlyDeletedName)
+        }
+    }
+
+    /// The tasks in the overview. Whether a task is done follows its checkbox while the checkbox exists.
+    var actionItemRows: [ActionItemRow] {
+        taskNotes.flatMap { note in
+            let blocks = note.matchActionItems().blocks
+            return note.actionItems.enumerated().compactMap { index, item -> ActionItemRow? in
+                guard item.status != .ignored else { return nil }
+                var isDone = item.status == .done
+                if let block = blocks[index], case .listItem(let checkbox) = note.document.blocks[block] {
+                    isDone = checkbox.isChecked
+                }
+                return ActionItemRow(
+                    id: ActionItemRow.ID(noteID: note.id, index: index),
+                    item: item,
+                    isDone: isDone,
+                    meetingTitle: note.holdsManualTasks ? "" : note.actionItemMeetingTitle,
+                    meetingDate: note.holdsManualTasks ? .distantPast : note.actionItemMeetingDate,
+                    isManual: note.holdsManualTasks
+                )
+            }
+        }
+    }
+
+    /// Everyone in the meetings or the list, to choose an owner from.
+    var actionItemPeople: [String] {
+        let names = taskNotes.flatMap(\.actionItemPeople) + taskNotes.flatMap(\.actionItems).compactMap(\.owner)
+        return Set(names).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    var newActionItemCount: Int {
+        taskNotes.reduce(0) { $0 + $1.newActionItemLines().count }
+    }
+
+    var openActionItemCount: Int {
+        actionItemRows.filter { !$0.isDone }.count
+    }
+
+    /// The checkboxes that haven't been reviewed, per protocol with the latest meeting first.
+    func actionItemProposals(myNames: [String]) -> [ActionItemProposal] {
+        taskNotes
+            .sorted { lhs, rhs in
+                lhs.actionItemMeetingDate != rhs.actionItemMeetingDate
+                    ? lhs.actionItemMeetingDate > rhs.actionItemMeetingDate
+                    : lhs.id.uuidString < rhs.id.uuidString
+            }
+            .compactMap { note in
+                let lines = note.newActionItemLines()
+                guard !lines.isEmpty else { return nil }
+                return ActionItemProposal(
+                    noteID: note.id,
+                    title: note.actionItemMeetingTitle,
+                    people: note.actionItemPeople,
+                    drafts: lines.map {
+                        ActionItemDraft(noteID: note.id, line: $0, meetingDate: note.actionItemMeetingDate, myNames: myNames)
+                    }
+                )
+            }
+    }
+
     var selectedNote: Note? {
         selectedNoteID.flatMap { notes[$0] }
     }
@@ -74,7 +139,7 @@ final class NoteStore {
     /// The notes in the selected folder, or all matching notes while searching. Newest first.
     var visibleNotes: [Note] {
         let candidates = isSearching
-            ? notes.values.filter { $0.folderID != NoteFolder.recentlyDeletedName && $0.matches(searchText: searchText) }
+            ? notes.values.filter { $0.folderID != NoteFolder.recentlyDeletedName && !$0.holdsManualTasks && $0.matches(searchText: searchText) }
             : notes.values.filter { isNote($0, in: selectedFolderID) }
         return candidates.sorted { lhs, rhs in
             lhs.modified != rhs.modified ? lhs.modified > rhs.modified : lhs.id.uuidString < rhs.id.uuidString
@@ -146,11 +211,11 @@ final class NoteStore {
         }.count
     }
 
-    /// The folders in the sidebar: the stored folders plus the Sent view.
+    /// The folders in the sidebar: the stored folders plus the Tasks and Sent views.
     var sidebarFolders: [NoteFolder] {
-        let deletedIndex = folders.firstIndex { $0.kind == .recentlyDeleted } ?? folders.endIndex
-        var result = folders
-        result.insert(.sent, at: deletedIndex)
+        var result = folders.filter { $0.kind != .manualTasks }
+        let deletedIndex = result.firstIndex { $0.kind == .recentlyDeleted } ?? result.endIndex
+        result.insert(contentsOf: [.actionItems, .sent], at: deletedIndex)
         return result
     }
 
@@ -330,6 +395,74 @@ final class NoteStore {
         scheduleSave(noteID)
     }
 
+    // MARK: - Tasks
+
+    /// Adds reviewed tasks to their protocol. Tasks aren't edits to the text, so `modified` stays.
+    func addActionItems(_ items: [ActionItem], to noteID: UUID) {
+        guard !items.isEmpty, notes[noteID] != nil else { return }
+        notes[noteID]?.actionItems += items.map(\.cleaned)
+        scheduleSave(noteID)
+    }
+
+    /// Adds a task the user wrote, which isn't connected to a protocol.
+    func addManualActionItem(_ item: ActionItem) {
+        if notes[Note.manualTaskListID] == nil {
+            notes[Note.manualTaskListID] = Note.manualTaskList()
+            ensureFolder(named: NoteFolder.manualTasksName)
+        }
+        addActionItems([item], to: Note.manualTaskListID)
+    }
+
+    /// Keeps a checkbox out of the list, so it isn't suggested again.
+    func ignoreActionItem(_ item: ActionItem, in noteID: UUID) {
+        var item = item
+        item.status = .ignored
+        addActionItems([item], to: noteID)
+    }
+
+    func updateActionItem(_ id: ActionItemRow.ID, to item: ActionItem) {
+        guard notes[id.noteID]?.actionItems.indices.contains(id.index) == true else { return }
+        notes[id.noteID]?.actionItems[id.index] = item.cleaned
+        scheduleSave(id.noteID)
+    }
+
+    /// Moves a task to the backlog, which removes its due date, or back to the list.
+    func setActionItem(_ id: ActionItemRow.ID, inBacklog: Bool) {
+        guard var item = notes[id.noteID]?.actionItems[safe: id.index] else { return }
+        item.isBacklog = inBacklog
+        updateActionItem(id, to: item)
+    }
+
+    /// Ticks or unticks a subtask. The task itself stays as it is.
+    func setSubtask(_ index: Int, of id: ActionItemRow.ID, done: Bool) {
+        guard let item = notes[id.noteID]?.actionItems[safe: id.index], item.subtasks.indices.contains(index) else { return }
+        notes[id.noteID]?.actionItems[id.index].subtasks[index].isDone = done
+        scheduleSave(id.noteID)
+    }
+
+    /// Takes a task out of the list. A protocol's checkbox stays, and isn't suggested again.
+    func removeActionItem(_ id: ActionItemRow.ID) {
+        guard let note = notes[id.noteID], note.actionItems.indices.contains(id.index) else { return }
+        if note.holdsManualTasks {
+            notes[id.noteID]?.actionItems.remove(at: id.index)
+        } else {
+            notes[id.noteID]?.actionItems[id.index].status = .ignored
+        }
+        scheduleSave(id.noteID)
+    }
+
+    /// Marks a task as done or not, in the list and on the protocol's checkbox.
+    func setActionItem(_ id: ActionItemRow.ID, done: Bool) {
+        guard var note = notes[id.noteID], note.actionItems.indices.contains(id.index) else { return }
+        let item = note.actionItems[id.index]
+        if let block = note.matchActionItems().blocks[id.index] {
+            note.document.setChecked(done, block: block, expectedText: item.source)
+        }
+        note.actionItems[id.index].status = done ? .done : .open
+        notes[id.noteID] = note
+        scheduleSave(id.noteID)
+    }
+
     func moveNote(_ noteID: UUID, to folderID: NoteFolder.ID) {
         guard var note = notes[noteID], note.folderID != folderID else { return }
         if selectedNoteID == noteID, !isSearching {
@@ -349,6 +482,10 @@ final class NoteStore {
         }
         if selectedNoteID == noteID {
             selectNeighbor(of: noteID)
+            // The task overview has no neighbor to move on to.
+            if selectedNoteID == noteID, selectedFolderID == NoteFolder.actionItems.id {
+                selectedNoteID = nil
+            }
         }
         guard note.hasContent else {
             discard(noteID)
@@ -474,7 +611,8 @@ final class NoteStore {
     private func keepBothVersions(of note: Note) async {
         let copy = Note(
             folderID: note.folderID, created: note.created, modified: note.modified, isPinned: note.isPinned,
-            meeting: note.meeting, sourceNoteID: note.sourceNoteID, sentAt: note.sentAt, document: note.document
+            meeting: note.meeting, sourceNoteID: note.sourceNoteID, sentAt: note.sentAt,
+            actionItems: note.actionItems, document: note.document
         )
         notes[copy.id] = copy
         do {
@@ -551,7 +689,7 @@ final class NoteStore {
             func rank(_ folder: NoteFolder) -> Int {
                 switch folder.kind {
                 case .recentlyDeleted: return 4
-                case .sent: return 3
+                case .sent, .actionItems, .manualTasks: return 3
                 case .meetingProtocols: return 2
                 case .regular: return folder.name == NoteFolder.defaultName ? 0 : 1
                 }
@@ -563,5 +701,11 @@ final class NoteStore {
 
     private func report(_ error: Error) {
         errorMessage = error.localizedDescription
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

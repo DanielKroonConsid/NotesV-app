@@ -67,12 +67,26 @@ The generated protocol must use the app's own rich-text styles (headings, lists,
 Never invent decisions, owners or dates that aren't in the input. A missing owner gets a clear placeholder; a missing due date is simply left out.
 Every AI provider must produce the same structure. Ask for structured output (e.g. JSON matching a shared schema) and convert it to rich text in the app, rather than relying on each server's free-text formatting.
 
+### 4. Follow up tasks
+The **Tasks** view in the sidebar collects the checkboxes in all protocols, sent ones included.
+- The app finds unticked checkboxes on its own, locally, and shows how many are new. Nothing is added until the user has reviewed it: they edit the task, choose themselves, someone else or no owner, and set a due date. They can leave a task for later or ignore it.
+- `ActionItemLine` and `DueDateParser` only fill in suggestions, and a date that can't be read is never guessed.
+- The overview filters on mine and others, sorts by due date, meeting or owner, and shows the protocol of the selected task.
+- Tasks are stored in the protocol's front matter (`tasks`). `source` is the checkbox line and is how a checkbox is matched to its task. Changing a task doesn't change the protocol's text.
+- A task's done state follows its checkbox in both directions. If the line is gone, the task's own `status` applies.
+- Tasks of a deleted protocol leave the overview, and come back if it is restored.
+- The user can also write **manual tasks**, which have no protocol. They are stored in the front matter of `Manual Tasks/Tasks.md` in the root (`Note.manualTaskListID`). That folder isn't shown in the sidebar, and its note isn't listed or searched as a note.
+- A task can have a **note** and **subtasks**. They belong to the task only: they aren't in the protocol's text, in Copy for Email or sent to the AI provider. A task and its subtasks are ticked independently.
+- The overview has the tabs Mine, Others, All, Backlog and Completed. A task in the first three is open and not in the backlog.
+- **Backlog** tasks are for later and have no due date, so moving a task there removes its date (`backlog: true`).
+- Ticking a task moves it to Completed, and unticking it returns it to its tab.
+
 ## Storage
 
 ### Location
 Notes are stored through `StorageService`. **App folders map to directories**, and **each note is one `.md` file**.
 
-`Notes`, `Meeting Protocols` and `Recently Deleted` are in the root. **Folders the user creates are inside `Notes`**, one level deep, and `Notes` itself can't be renamed or deleted. `LocalStorageService` moves folders it finds next to `Notes` into it on every load, and a merge never loses a note.
+`Notes`, `Meeting Protocols`, `Manual Tasks` and `Recently Deleted` are in the root. **Folders the user creates are inside `Notes`**, one level deep, and `Notes` itself can't be renamed or deleted. `LocalStorageService` moves folders it finds next to `Notes` into it on every load, and a merge never loses a note.
 
 By default they are in the app's container. In Settings the user can pick a folder with the system folder picker, for example one the OneDrive app syncs. That app handles sync and offline copies, and NotesV never talks to OneDrive itself.
 - The notes go in a `NotesV` subfolder of the picked folder, so other contents never show up as note folders.
@@ -107,6 +121,15 @@ modified: 2026-10-20T09:45:00Z
 pinned: false
 sourceNote: 7B1C2D3E-1111-4222-8333-944455566677   # Only on protocols: the note it is attached to
 sent: 2026-10-20T11:00:00Z   # Only on protocols the user marked as sent
+tasks:                       # Only on protocols: the reviewed tasks. `status` is open, done or ignored
+  - source: "Send the offer – Ada Ek, Friday"
+    task: "Send the offer"
+    owner: "Ada Ek"
+    mine: false
+    due: 2026-10-23
+    note: "Waiting for a price from Bo"
+    subtasks: ["[x] Get the price", "[ ] Write a draft"]
+    status: open
 meeting:
   subject: "Weekly sync"
   start: 2026-10-20T09:00:00Z
@@ -140,6 +163,7 @@ Settings:
   - enter or remove the API key
   - choose the model ("Latest" by default) and test the connection
   - pick the storage folder
+  - enter the names the user goes by, which pre-select them when reviewing tasks
 - Remember the server, the model choice and the folder's bookmark in `UserDefaults`. The rest of the app depends only on `ProtocolGenerator`, never on a concrete provider.
 
 ## Releases

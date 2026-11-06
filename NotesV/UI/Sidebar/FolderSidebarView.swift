@@ -28,10 +28,7 @@ struct FolderSidebarView: View {
                                 hoveredFolderID = nil
                             }
                         }
-                        // Unsent protocols are what needs attention; the total shows on hover.
-                        .badge(hoveredFolderID == folder.id
-                               ? store.noteCount(in: folder.id)
-                               : store.unsentProtocolCount(in: folder.id))
+                        .badge(badgeCount(for: folder))
                         .tag(folder.id)
                         .contextMenu {
                             if folder.isSubfolder {
@@ -90,6 +87,15 @@ struct FolderSidebarView: View {
             Text("The notes in the folder will be moved to Recently Deleted.")
         }
     }
+
+    /// What needs attention: unsent protocols and new tasks. The total shows on hover.
+    private func badgeCount(for folder: NoteFolder) -> Int {
+        let isHovered = hoveredFolderID == folder.id
+        if folder.kind == .actionItems {
+            return isHovered ? store.openActionItemCount : store.newActionItemCount
+        }
+        return isHovered ? store.noteCount(in: folder.id) : store.unsentProtocolCount(in: folder.id)
+    }
 }
 
 private struct FolderRow: View {
@@ -101,6 +107,8 @@ private struct FolderRow: View {
             Label("Recently Deleted", systemImage: "trash")
         case .meetingProtocols:
             Label("Meeting Protocols", systemImage: "doc.text")
+        case .actionItems, .manualTasks:
+            Label("Tasks", systemImage: "checklist")
         case .sent:
             Label("Sent Notes", systemImage: "paperplane")
         case .regular where folder.name == NoteFolder.defaultName:

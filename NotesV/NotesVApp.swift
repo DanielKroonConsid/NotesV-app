@@ -12,6 +12,7 @@ struct NotesVApp: App {
                 .environment(appDelegate.aiSettings)
                 .environment(appDelegate.protocolGeneration)
                 .environment(appDelegate.meetingImport)
+                .environment(appDelegate.profileSettings)
                 .frame(minWidth: 760, minHeight: 420)
         }
         .defaultSize(width: 1100, height: 700)
@@ -30,6 +31,7 @@ struct NotesVApp: App {
             SettingsView()
                 .environment(appDelegate.aiSettings)
                 .environment(appDelegate.storageSettings)
+                .environment(appDelegate.profileSettings)
                 .environment(appDelegate.store)
         }
     }
@@ -40,6 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let store: NoteStore
     let aiSettings: AISettings
     let storageSettings: StorageSettings
+    let profileSettings: ProfileSettings
     let protocolGeneration = ProtocolGenerationModel()
     let meetingImport = MeetingImportModel()
 
@@ -52,8 +55,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 keychain: KeychainService(service: "se.consid.NotesV.test-host"),
                 defaultsSuiteName: "NotesV-TestHost"
             )
+            profileSettings = ProfileSettings(defaultsSuiteName: "NotesV-TestHost")
         } else {
             aiSettings = AISettings()
+            profileSettings = ProfileSettings()
             let rootURL = (try? LocalStorageService.defaultRootURL())
                 ?? FileManager.default.temporaryDirectory.appending(path: "NotesV")
             storageSettings = StorageSettings(defaultRootURL: rootURL)

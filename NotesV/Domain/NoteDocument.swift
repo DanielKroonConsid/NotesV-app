@@ -116,6 +116,24 @@ struct NoteDocument: Hashable, Sendable {
         blocks.map(\.plainText).joined(separator: "\n")
     }
 
+    /// The checkboxes, with the index of their block.
+    var checklistItems: [(block: Int, item: ListItem)] {
+        blocks.enumerated().compactMap { index, block in
+            guard case .listItem(let item) = block, item.kind == .checklist else { return nil }
+            return (index, item)
+        }
+    }
+
+    /// Ticks or unticks a checkbox. Returns `false` if the block no longer has the expected text.
+    @discardableResult
+    mutating func setChecked(_ isChecked: Bool, block index: Int, expectedText: String) -> Bool {
+        guard blocks.indices.contains(index), case .listItem(var item) = blocks[index],
+              item.kind == .checklist, item.text.plainText == expectedText else { return false }
+        item.isChecked = isChecked
+        blocks[index] = .listItem(item)
+        return true
+    }
+
     /// The first non-empty line, or an empty string.
     var title: String {
         nonEmptyLines.first ?? ""
