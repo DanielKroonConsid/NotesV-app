@@ -41,6 +41,8 @@ final class AISettings {
     private(set) var availableModels: [String] = []
     private(set) var connectionStatus = ConnectionStatus.unknown
 
+    /// Called when the configuration has changed, so it can be backed up.
+    @ObservationIgnored var onChange: (() -> Void)?
     @ObservationIgnored private let keychain: KeychainService
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let modelResolver: ModelResolver
@@ -102,5 +104,6 @@ final class AISettings {
 
     private func saveConfiguration() {
         defaults.set(try? JSONEncoder().encode(configuration), forKey: Self.configurationKey)
+        onChange?()
     }
 }

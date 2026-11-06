@@ -1,6 +1,7 @@
+import CryptoKit
 import Foundation
 
-/// A task the user follows up on. It is stored in the front matter of the protocol it came from.
+/// A task the user follows up on. It is stored in a file of its own in the Tasks folder.
 struct ActionItem: Hashable, Sendable {
     enum Status: String, Sendable {
         case open
@@ -55,6 +56,8 @@ struct ActionItem: Hashable, Sendable {
     var note: String?
     var subtasks: [Subtask]
     var status: Status
+    /// The protocol the task came from. `nil` for a task the user wrote themselves.
+    var protocolID: UUID?
 
     init(
         source: String,
@@ -65,7 +68,8 @@ struct ActionItem: Hashable, Sendable {
         isBacklog: Bool = false,
         note: String? = nil,
         subtasks: [Subtask] = [],
-        status: Status = .open
+        status: Status = .open,
+        protocolID: UUID? = nil
     ) {
         self.source = source
         self.task = task
@@ -76,6 +80,42 @@ struct ActionItem: Hashable, Sendable {
         self.note = note
         self.subtasks = subtasks
         self.status = status
+        self.protocolID = protocolID
+    }
+
+    /// The readable part of the task's file: a title, the note and the subtasks as a checklist.
+    var document: NoteDocument {
+        func line(_ text: String) -> RichText {
+            RichText(plain: text.split(whereSeparator: \.isNewline).joined(separator: " "))
+        }
+        var blocks: [Block] = [.paragraph(.title, line(task))]
+        if let note {
+            blocks += note.split(separator: "\n", omittingEmptySubsequences: false).map { .paragraph(.body, RichText(plain: String($0))) }
+        }
+        blocks += subtasks.map { .listItem(ListItem(kind: .checklist, isChecked: $0.isDone, text: line($0.title))) }
+        return NoteDocument(blocks: blocks)
+    }
+
+    /// Takes the title, note and subtasks from the file, so edits made in another app count.
+    func readingText(from document: NoteDocument) -> ActionItem {
+        var title: String?
+        var lines: [String] = []
+        var subtasks: [Subtask] = []
+        for block in document.blocks {
+            if case .listItem(let item) = block, item.kind == .checklist {
+                subtasks.append(Subtask(title: item.text.plainText, isDone: item.isChecked))
+            } else if title == nil {
+                let text = block.plainText.trimmingCharacters(in: .whitespacesAndNewlines)
+                title = text.isEmpty ? nil : text
+            } else {
+                lines.append(block.plainText)
+            }
+        }
+        var item = self
+        item.task = title ?? source
+        item.note = lines.joined(separator: "\n")
+        item.subtasks = subtasks
+        return item.cleaned
     }
 
     /// The task without an empty note or empty subtasks, which aren't worth storing.
@@ -188,26 +228,36 @@ struct ActionItemProposal: Identifiable, Hashable, Sendable {
     var drafts: [ActionItemDraft]
 }
 
+extension UUID {
+    /// The same text always gives the same id, so moving a task twice can't duplicate it.
+    init(derivedFrom text: String) {
+        var bytes = Array(SHA256.hash(data: Data(text.utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0F) | 0x50
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        self = bytes.withUnsafeBufferPointer { NSUUID(uuidBytes: $0.baseAddress) as UUID }
+    }
+}
+
 extension Note {
-    /// Pairs the stored tasks with the protocol's checkboxes. Every checkbox is claimed once, so a
-    /// line that occurs twice counts as two. Returns the block of each task, and the unclaimed blocks.
-    func matchActionItems() -> (blocks: [Int?], unclaimed: [Int]) {
+    /// Pairs a protocol's tasks with its checkboxes. Every checkbox is claimed once, so a line
+    /// that occurs twice counts as two. Returns the block of each task, and the unclaimed blocks.
+    func matchActionItems(_ tasks: [ActionItem]) -> (blocks: [Int?], unclaimed: [Int]) {
         var available: [String: [Int]] = [:]
         for (index, item) in document.checklistItems {
             available[item.text.plainText, default: []].append(index)
         }
-        let blocks = actionItems.map { item -> Int? in
-            guard let block = available[item.source]?.first else { return nil }
-            available[item.source]?.removeFirst()
+        let blocks = tasks.map { task -> Int? in
+            guard let block = available[task.source]?.first else { return nil }
+            available[task.source]?.removeFirst()
             return block
         }
         return (blocks, available.values.flatMap { $0 }.sorted())
     }
 
     /// The checkboxes that aren't in the list yet. Ticked ones are finished, so they aren't suggested.
-    func newActionItemLines() -> [String] {
+    func newActionItemLines(tasks: [ActionItem]) -> [String] {
         guard isMeetingProtocol, folderID != NoteFolder.recentlyDeletedName else { return [] }
-        return matchActionItems().unclaimed.compactMap { block in
+        return matchActionItems(tasks).unclaimed.compactMap { block in
             guard case .listItem(let item) = document.blocks[block], !item.isChecked else { return nil }
             let line = item.text.plainText
             return line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : line
@@ -233,21 +283,17 @@ extension Note {
 
 /// A task in the overview, with its link to the protocol.
 struct ActionItemRow: Identifiable, Hashable, Sendable {
-    struct ID: Hashable, Sendable {
-        let noteID: UUID
-        /// The task's position in its note.
-        let index: Int
-    }
-
-    let id: ID
+    /// The id of the task's file.
+    let id: UUID
     let item: ActionItem
     let isDone: Bool
     let meetingTitle: String
     let meetingDate: Date
-    /// Written by the user, so it has no protocol.
-    var isManual = false
+    /// The protocol to show, if it still exists.
+    var protocolID: UUID?
 
-    var noteID: UUID { id.noteID }
+    /// A task the user wrote, or one whose protocol is gone.
+    var isManual: Bool { protocolID == nil }
 
     func isOverdue(on day: Date) -> Bool {
         !isDone && (item.dueDate ?? .distantFuture) < day
@@ -287,7 +333,7 @@ enum ActionItemOverview {
             case noDate
             case backlog
             case done
-            case meeting(UUID)
+            case meeting(UUID?)
             case me
             case owner(String)
             case noOwner
@@ -346,8 +392,7 @@ enum ActionItemOverview {
         let rhsDue = rhs.item.dueDate ?? .distantFuture
         if lhsDue != rhsDue { return lhsDue < rhsDue }
         if lhs.meetingDate != rhs.meetingDate { return lhs.meetingDate > rhs.meetingDate }
-        if lhs.noteID != rhs.noteID { return lhs.noteID.uuidString < rhs.noteID.uuidString }
-        return lhs.id.index < rhs.id.index
+        return lhs.id.uuidString < rhs.id.uuidString
     }
 
     private static func dueDateSections(of rows: [ActionItemRow], now: Date, calendar: Calendar) -> [Section] {
@@ -368,14 +413,14 @@ enum ActionItemOverview {
     }
 
     private static func meetingSections(of rows: [ActionItemRow]) -> [Section] {
-        let groups = Dictionary(grouping: rows, by: \.noteID)
+        let groups = Dictionary(grouping: rows, by: \.protocolID)
         return groups.values
             .sorted { lhs, rhs in
                 lhs[0].meetingDate != rhs[0].meetingDate
                     ? lhs[0].meetingDate > rhs[0].meetingDate
-                    : lhs[0].noteID.uuidString < rhs[0].noteID.uuidString
+                    : (lhs[0].protocolID?.uuidString ?? "") < (rhs[0].protocolID?.uuidString ?? "")
             }
-            .map { Section(id: .meeting($0[0].noteID), title: $0[0].meetingTitle, rows: $0) }
+            .map { Section(id: .meeting($0[0].protocolID), title: $0[0].meetingTitle, rows: $0) }
     }
 
     private static func ownerSections(of rows: [ActionItemRow]) -> [Section] {

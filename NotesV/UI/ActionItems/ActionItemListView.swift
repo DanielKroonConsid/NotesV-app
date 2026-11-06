@@ -53,7 +53,7 @@ struct ActionItemListView: View {
         }
         .onChange(of: selection) { _, id in
             // A manual task has no protocol to show.
-            store.selectedNoteID = id.flatMap { store.notes[$0.noteID]?.holdsManualTasks == true ? nil : $0.noteID }
+            store.selectedNoteID = id.flatMap { taskID in store.actionItemRows.first { $0.id == taskID }?.protocolID }
         }
         .toolbar {
             ToolbarItem {
@@ -153,9 +153,9 @@ struct ActionItemListView: View {
                 store.setActionItem(row.id, inBacklog: !row.item.isBacklog)
             }
         }
-        if !row.isManual {
+        if let protocolID = row.protocolID {
             Button("Open Protocol in Its Own Window") {
-                openWindow(id: ProtocolWindowView.windowID, value: row.noteID)
+                openWindow(id: ProtocolWindowView.windowID, value: protocolID)
             }
         }
         Divider()

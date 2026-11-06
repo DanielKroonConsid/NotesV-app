@@ -5,12 +5,15 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
         case regular
         case meetingProtocols
         case actionItems
+        case taskFiles
         case manualTasks
         case sent
         case recentlyDeleted
     }
 
-    /// The directory of tasks that don't come from a protocol. The sidebar doesn't show it.
+    /// The directory with one file per task. The Tasks view shows them, not the folder list.
+    static let tasksName = "Tasks"
+    /// Where earlier versions kept manual tasks. `NoteStore` moves them to `tasksName`.
     static let manualTasksName = "Manual Tasks"
     /// The folder name that new installations start with.
     static let defaultName = "Notes"
@@ -34,6 +37,7 @@ struct NoteFolder: Identifiable, Hashable, Sendable {
         case Self.meetingProtocolsName: .meetingProtocols
         case Self.sent.name: .sent
         case Self.actionItems.name: .actionItems
+        case Self.tasksName: .taskFiles
         case Self.manualTasksName: .manualTasks
         default: .regular
         }
@@ -57,7 +61,9 @@ struct Note: Identifiable, Hashable, Sendable {
     var sourceNoteID: UUID?
     /// When the user marked the note as sent. `nil` if it isn't marked.
     var sentAt: Date?
-    /// For a meeting protocol: the checkboxes the user has reviewed, in the order they were added.
+    /// Set if this note is a task's file. Its title, note and subtasks are also the document.
+    var task: ActionItem?
+    /// Tasks stored by earlier versions, until `NoteStore` has moved them to files of their own.
     var actionItems: [ActionItem]
     var document: NoteDocument
 
@@ -70,6 +76,7 @@ struct Note: Identifiable, Hashable, Sendable {
         meeting: MeetingDetails? = nil,
         sourceNoteID: UUID? = nil,
         sentAt: Date? = nil,
+        task: ActionItem? = nil,
         actionItems: [ActionItem] = [],
         document: NoteDocument = .newNote
     ) {
@@ -81,22 +88,18 @@ struct Note: Identifiable, Hashable, Sendable {
         self.meeting = meeting
         self.sourceNoteID = sourceNoteID
         self.sentAt = sentAt
+        self.task = task
         self.actionItems = actionItems
         self.document = document
     }
 
-    /// The note that holds tasks the user wrote themselves. The fixed id gives one list per library.
-    static let manualTaskListID = UUID(uuidString: "6E1F3C52-8A47-4D0B-9C21-5B7D2E90A1F4")!
-
-    static func manualTaskList() -> Note {
-        Note(
-            id: manualTaskListID,
-            folderID: NoteFolder.manualTasksName,
-            document: NoteDocument(blocks: [.paragraph(.title, RichText(plain: "Tasks"))])
-        )
+    /// The file of a task.
+    static func taskFile(_ item: ActionItem, id: UUID = UUID(), created: Date = .nowWholeSeconds) -> Note {
+        Note(id: id, folderID: NoteFolder.tasksName, created: created, modified: created, task: item, document: item.document)
     }
 
-    /// A folder is checked, so a copy kept after a conflict with the file still shows its tasks.
+    /// The list of manual tasks that earlier versions kept. A folder is checked, so that a copy
+    /// kept after a conflict with the file is moved too.
     var holdsManualTasks: Bool {
         folderID == NoteFolder.manualTasksName
     }

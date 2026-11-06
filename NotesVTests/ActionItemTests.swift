@@ -30,7 +30,12 @@ struct ActionItemTests {
         let storage = InMemoryStorageService()
         let store = NoteStore(storage: storage)
         await store.load()
-        for note in notes { store.addProtocol(note) }
+        for note in notes {
+            var protocolNote = note
+            protocolNote.actionItems = []
+            store.addProtocol(protocolNote)
+            store.addActionItems(note.actionItems, to: note.id)
+        }
         // addProtocol files a note in Meeting Protocols; put it back where the test wants it.
         for note in notes where note.folderID != NoteFolder.meetingProtocolsName {
             store.moveNote(note.id, to: note.folderID)
@@ -304,8 +309,8 @@ struct ActionItemTests {
         )
         let plainNote = Note(folderID: "Notes", document: NoteDocument(blocks: [checkbox("Anteckning")]))
 
-        #expect(note.newActionItemLines() == ["Ny"])
-        #expect(plainNote.newActionItemLines().isEmpty)
+        #expect(note.newActionItemLines(tasks: [handled, ignored]) == ["Ny"])
+        #expect(plainNote.newActionItemLines(tasks: []).isEmpty)
 
         let (store, _) = await makeStore([note])
         #expect(store.newActionItemCount == 1)
@@ -313,7 +318,7 @@ struct ActionItemTests {
 
     @Test func theSameLineTwiceCountsAsTwoTasks() {
         let note = protocolNote([checkbox("Samma"), checkbox("Samma")], actionItems: [ActionItem(source: "Samma", task: "Samma")])
-        #expect(note.newActionItemLines() == ["Samma"])
+        #expect(note.newActionItemLines(tasks: note.actionItems) == ["Samma"])
     }
 
     @Test func addedAndIgnoredTasksAreNotSuggestedAgain() async throws {
@@ -348,7 +353,7 @@ struct ActionItemTests {
         #expect(store.actionItemRows.first?.isDone == true)
         #expect(store.notes[note.id]?.document.checklistItems.first?.item.isChecked == true)
         #expect(MarkdownCodec.encode(try #require(store.notes[note.id])).contains("- [x] Ett"))
-        #expect(MarkdownCodec.encode(try #require(store.notes[note.id])).contains("status: done"))
+        #expect(MarkdownCodec.encode(try #require(store.notes[id])).contains("status: done"))
 
         // Unticking in the protocol reopens the task.
         store.updateDocument(NoteDocument(blocks: [checkbox("Ett")]), of: note.id)
@@ -424,11 +429,12 @@ struct ActionItemTests {
 
     private func row(_ task: String, owner: String? = nil, mine: Bool = false, due: Date? = nil, done: Bool = false, noteID: UUID = UUID(), meeting: String = "Sync", meetingDate: Date? = nil, index: Int = 0) -> ActionItemRow {
         ActionItemRow(
-            id: .init(noteID: noteID, index: index),
+            id: UUID(),
             item: ActionItem(source: task, task: task, owner: owner, isMine: mine, dueDate: due),
             isDone: done,
             meetingTitle: meeting,
-            meetingDate: meetingDate ?? self.meetingDate
+            meetingDate: meetingDate ?? self.meetingDate,
+            protocolID: noteID
         )
     }
 
@@ -473,7 +479,7 @@ struct ActionItemTests {
 
     private func backlogRow(_ task: String, mine: Bool = false, done: Bool = false) -> ActionItemRow {
         ActionItemRow(
-            id: .init(noteID: UUID(), index: 0),
+            id: UUID(),
             item: ActionItem(source: task, task: task, isMine: mine, isBacklog: true),
             isDone: done, meetingTitle: "Sync", meetingDate: meetingDate
         )
@@ -538,7 +544,7 @@ struct ActionItemTests {
         store.setActionItem(id, done: false)
 
         #expect(store.actionItemRows.first?.isDone == false)
-        #expect(store.notes[note.id]?.actionItems.first?.status == .open)
+        #expect(store.notes[id]?.task?.status == .open)
         #expect(store.notes[note.id]?.document.checklistItems.first?.item.isChecked == false)
     }
 
@@ -552,10 +558,10 @@ struct ActionItemTests {
         task.task = "Boka lokal"
         store.addManualActionItem(task)
 
-        #expect(store.actionItemRows.map(\.item.task) == ["Ring Bo", "Boka lokal"])
+        #expect(Set(store.actionItemRows.map(\.item.task)) == ["Ring Bo", "Boka lokal"])
         #expect(store.actionItemRows.filter(\.isManual).count == 2)
         #expect(store.newActionItemCount == 0)
-        #expect(!store.sidebarFolders.map(\.name).contains(NoteFolder.manualTasksName))
+        #expect(!store.sidebarFolders.map(\.name).contains(NoteFolder.tasksName))
         store.searchText = "Tasks"
         #expect(store.visibleNotes.isEmpty)
     }
@@ -577,7 +583,7 @@ struct ActionItemTests {
 
         store.removeActionItem(first)
         #expect(store.actionItemRows.map(\.item.task) == ["Två"])
-        #expect(store.notes[Note.manualTaskListID]?.actionItems.count == 1)
+        #expect(store.notes[first] == nil)
     }
 
     @Test func manualTasksSurviveARestartInTheirOwnFolder() async throws {
@@ -593,8 +599,165 @@ struct ActionItemTests {
 
         #expect(restarted.actionItemRows.map(\.item.owner) == ["Bo"])
         #expect(restarted.actionItemRows.first?.isDone == true)
-        let path = rootURL.appending(path: "Manual Tasks/Tasks.md").path(percentEncoded: false)
+        let path = rootURL.appending(path: "Tasks/Ring Bo.md").path(percentEncoded: false)
         #expect(FileManager.default.fileExists(atPath: path))
+    }
+
+    // MARK: - Task files
+
+    @Test func aTaskFileIsReadableMarkdown() {
+        let item = ActionItem(
+            source: "Skicka – Ada", task: "Skicka *offert*", owner: "Ada", dueDate: day(2026, 11, 20),
+            note: "Väntar på Bo.\nRing på måndag.", subtasks: [.init(title: "Hämta pris", isDone: true), .init(title: "Skriv")],
+            protocolID: UUID(uuidString: "7B1C2D3E-1111-4222-8333-944455566677")
+        )
+        let text = MarkdownCodec.encode(Note.taskFile(item))
+
+        #expect(text.contains("""
+        task:
+          protocol: 7B1C2D3E-1111-4222-8333-944455566677
+          source: "Skicka – Ada"
+          owner: "Ada"
+          mine: false
+          due: 2026-11-20
+          status: open
+        ---
+        """))
+        #expect(text.contains("- [x] Hämta pris"))
+        #expect(!text.contains("subtasks:"))
+
+        let decoded = MarkdownCodec.decode(text)
+        #expect(decoded.fields?.task?.readingText(from: decoded.document) == item)
+    }
+
+    @Test func tasksWithAnEditedFileFollowTheFile() {
+        let text = """
+        ---
+        id: 3F2504E0-4F89-11D3-9A0C-0305E82C3301
+        task:
+          backlog: true
+          status: done
+        ---
+        # Ändrad i ett annat program
+
+        Egen rad
+
+        - [x] Klart steg
+        """
+        let decoded = MarkdownCodec.decode(text)
+        let item = decoded.fields?.task?.readingText(from: decoded.document)
+
+        #expect(item?.task == "Ändrad i ett annat program")
+        #expect(item?.note == "Egen rad")
+        #expect(item?.subtasks == [.init(title: "Klart steg", isDone: true)])
+        #expect(item?.isBacklog == true)
+        #expect(item?.status == .done)
+        #expect(item?.protocolID == nil)
+    }
+
+    @Test func eachTaskIsItsOwnFileInTheTasksFolder() async throws {
+        let rootURL = FileManager.default.temporaryDirectory.appending(path: "NotesV-Tests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let note = protocolNote([checkbox("Ett – Ada")])
+        let store = NoteStore(storage: LocalStorageService(rootURL: rootURL))
+        await store.load()
+        store.addProtocol(note)
+        store.addActionItems([ActionItem(source: "Ett – Ada", task: "Ett", note: "Notering")], to: note.id)
+        store.addManualActionItem(ActionItem(source: "Två", task: "Två"))
+        await store.prepareForTermination()
+
+        let names = try FileManager.default.contentsOfDirectory(atPath: rootURL.appending(path: "Tasks").path(percentEncoded: false))
+        #expect(Set(names) == ["Ett.md", "Två.md"])
+
+        let restarted = NoteStore(storage: LocalStorageService(rootURL: rootURL))
+        await restarted.load()
+        let row = try #require(restarted.actionItemRows.first { $0.item.task == "Ett" })
+        #expect(row.protocolID == note.id)
+        #expect(row.item.note == "Notering")
+        #expect(row.meetingTitle == "Sync")
+        #expect(restarted.newActionItemCount == 0)
+        #expect(restarted.folders.contains { $0.name == NoteFolder.tasksName })
+        #expect(!restarted.sidebarFolders.contains { $0.name == NoteFolder.tasksName })
+    }
+
+    @Test func permanentlyDeletingAProtocolRemovesItsTasks() async throws {
+        let note = protocolNote([checkbox("Ett")], actionItems: [ActionItem(source: "Ett", task: "Ett")])
+        let (store, _) = await makeStore([note])
+        store.deleteNote(note.id)
+        store.deleteNote(note.id)
+        store.confirmPermanentDeletion()
+
+        #expect(store.notes.values.allSatisfy { $0.task == nil })
+    }
+
+    @Test func aTaskWhoseProtocolIsGoneIsKept() async throws {
+        let (store, _) = await makeStore([])
+        store.addActionItems([ActionItem(source: "Ett", task: "Ett")], to: UUID())
+
+        let row = try #require(store.actionItemRows.first)
+        #expect(row.isManual)
+        store.removeActionItem(row.id)
+        #expect(store.notes.values.allSatisfy { $0.task == nil })
+    }
+
+    @Test func oldTasksAreMovedToFiles() async throws {
+        let rootURL = FileManager.default.temporaryDirectory.appending(path: "NotesV-Tests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: rootURL) }
+        let storage = LocalStorageService(rootURL: rootURL)
+        let date = Date(timeIntervalSince1970: 1_800_000_000)
+        let note = Note(
+            folderID: NoteFolder.meetingProtocolsName, modified: date, sourceNoteID: UUID(),
+            actionItems: [
+                ActionItem(source: "Ett", task: "Ett", owner: "Ada", dueDate: day(2026, 11, 20), note: "Rad\nRad två", subtasks: [.init(title: "Steg", isDone: true)]),
+                ActionItem(source: "Bort", task: "Bort", status: .ignored),
+            ],
+            document: NoteDocument(blocks: [.paragraph(.title, "Protokoll"), checkbox("Ett"), checkbox("Bort")])
+        )
+        try await storage.save(note)
+        var list = Note(folderID: NoteFolder.manualTasksName, document: NoteDocument(blocks: [.paragraph(.title, "Tasks")]))
+        list.actionItems = [ActionItem(source: "Egen", task: "Egen", isMine: true, isBacklog: true)]
+        try await storage.save(list)
+
+        let store = NoteStore(storage: storage)
+        await store.load()
+
+        #expect(Set(store.actionItemRows.map(\.item.task)) == ["Ett", "Egen"])
+        #expect(store.newActionItemCount == 0)
+        let moved = try #require(store.actionItemRows.first { $0.item.task == "Ett" })
+        #expect(moved.protocolID == note.id)
+        #expect(moved.item.note == "Rad\nRad två")
+        #expect(moved.item.subtasks == [.init(title: "Steg", isDone: true)])
+        #expect(moved.item.dueDate == day(2026, 11, 20))
+        #expect(store.actionItemRows.first { $0.item.task == "Egen" }?.item.isBacklog == true)
+        #expect(store.notes[note.id]?.actionItems == [])
+        #expect(store.notes[note.id]?.modified == date)
+        let manualPath = rootURL.appending(path: NoteFolder.manualTasksName).path(percentEncoded: false)
+        #expect(!FileManager.default.fileExists(atPath: manualPath))
+
+        // A second start finds nothing more to move.
+        let restarted = NoteStore(storage: LocalStorageService(rootURL: rootURL))
+        await restarted.load()
+        #expect(restarted.notes.values.filter { $0.task != nil }.count == 3)
+        let text = try String(contentsOf: rootURL.appending(path: "Tasks/Ett.md"), encoding: .utf8)
+        #expect(text.contains("- [x] Steg"))
+    }
+
+    @Test func anInterruptedMoveDoesNotDuplicateTasks() async throws {
+        let storage = InMemoryStorageService()
+        let protocolID = UUID()
+        var note = Note(id: protocolID, folderID: NoteFolder.meetingProtocolsName, sourceNoteID: UUID(), document: NoteDocument(blocks: [.paragraph(.title, "P"), checkbox("Ett")]))
+        var item = ActionItem(source: "Ett", task: "Ett")
+        note.actionItems = [item]
+        item.protocolID = protocolID
+        // The file was written, but the protocol still has its old entry.
+        try await storage.save(note)
+        try await storage.save(Note.taskFile(item, id: UUID(derivedFrom: "\(protocolID.uuidString)/0")))
+
+        let store = NoteStore(storage: storage)
+        await store.load()
+
+        #expect(store.actionItemRows.count == 1)
+        #expect(store.notes[protocolID]?.actionItems == [])
     }
 
     @Test func sortsByMeetingAndOwner() {
