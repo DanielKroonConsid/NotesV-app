@@ -61,16 +61,6 @@
         }
       }
     },
-    "A task for later, without a due date": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En uppgift för senare, utan förfallodatum"
-          }
-        }
-      }
-    },
     "AI": {
       "localizations": {
         "sv": {
@@ -801,6 +791,16 @@
         }
       }
     },
+    "Mark as Completed": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera som klar"
+          }
+        }
+      }
+    },
     "Mark as Not Sent": {
       "localizations": {
         "sv": {
@@ -817,6 +817,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Markera som skickad"
+          }
+        }
+      }
+    },
+    "Mark this task as completed?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera uppgiften som klar?"
           }
         }
       }
@@ -1077,6 +1087,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ingen ytterligare text"
+          }
+        }
+      }
+    },
+    "No due date": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget förfallodatum"
           }
         }
       }

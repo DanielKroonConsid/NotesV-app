@@ -9,6 +9,12 @@ struct ActionItemEditor: View {
 
     @FocusState private var focusedSubtask: UUID?
 
+    private enum Schedule: Hashable {
+        case none
+        case date
+        case backlog
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             TextField("Task", text: $item.task, prompt: Text("Task"), axis: .vertical)
@@ -41,21 +47,21 @@ struct ActionItemEditor: View {
                 .help(Text("Choose owner"))
                 .accessibilityLabel(Text("Choose owner"))
 
-                if !item.isBacklog {
-                    Toggle("Due date", isOn: hasDueDate)
-                        .help(Text("Due date"))
-                    if item.dueDate != nil {
-                        DatePicker("Due date", selection: dueDate, displayedComponents: .date)
-                            .datePickerStyle(.field)
-                    } else {
-                        Text("Due date")
-                            .foregroundStyle(.secondary)
-                    }
+            }
+            // One choice, because "no date" and "backlog" both mean the task has no due date.
+            HStack {
+                Picker("Due date", selection: schedule) {
+                    Text("No due date").tag(Schedule.none)
+                    Text("Due date").tag(Schedule.date)
+                    Text("Backlog").tag(Schedule.backlog)
+                }
+                .pickerStyle(.menu)
+                .fixedSize()
+                if item.dueDate != nil {
+                    DatePicker("Due date", selection: dueDate, displayedComponents: .date)
+                        .datePickerStyle(.field)
                 }
             }
-            Toggle("Backlog", isOn: inBacklog)
-                .labelsVisibility(.visible)
-                .help(Text("A task for later, without a due date"))
             if let unreadDueText, item.dueDate == nil, !item.isBacklog {
                 Text("The protocol says: \(unreadDueText)")
                     .font(.caption)
@@ -145,22 +151,16 @@ struct ActionItemEditor: View {
         )
     }
 
-    private var inBacklog: Binding<Bool> {
+    private var schedule: Binding<Schedule> {
         Binding(
-            get: { item.isBacklog },
-            set: { isBacklog in
-                item.isBacklog = isBacklog
-                if isBacklog {
-                    item.dueDate = nil
+            get: { item.isBacklog ? .backlog : item.dueDate == nil ? .none : .date },
+            set: { schedule in
+                item.isBacklog = schedule == .backlog
+                switch schedule {
+                case .none, .backlog: item.dueDate = nil
+                case .date: item.dueDate = item.dueDate ?? DueDateParser.calendar.startOfDay(for: .now)
                 }
             }
-        )
-    }
-
-    private var hasDueDate: Binding<Bool> {
-        Binding(
-            get: { item.dueDate != nil },
-            set: { item.dueDate = $0 ? DueDateParser.calendar.startOfDay(for: .now) : nil }
         )
     }
 
