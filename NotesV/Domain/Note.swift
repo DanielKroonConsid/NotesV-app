@@ -65,6 +65,8 @@ struct Note: Identifiable, Hashable, Sendable {
     var task: ActionItem?
     /// Tasks stored by earlier versions, until `NoteStore` has moved them to files of their own.
     var actionItems: [ActionItem]
+    /// Front matter NotesV doesn't use, such as another app's `tags`. It is written back unchanged.
+    var extraFrontMatter: [FrontMatter.RawEntry]
     var document: NoteDocument
 
     init(
@@ -78,6 +80,7 @@ struct Note: Identifiable, Hashable, Sendable {
         sentAt: Date? = nil,
         task: ActionItem? = nil,
         actionItems: [ActionItem] = [],
+        extraFrontMatter: [FrontMatter.RawEntry] = [],
         document: NoteDocument = .newNote
     ) {
         self.id = id
@@ -90,6 +93,7 @@ struct Note: Identifiable, Hashable, Sendable {
         self.sentAt = sentAt
         self.task = task
         self.actionItems = actionItems
+        self.extraFrontMatter = extraFrontMatter
         self.document = document
     }
 

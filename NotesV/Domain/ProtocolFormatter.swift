@@ -5,7 +5,8 @@ enum ProtocolFormatter {
     /// The fixed texts in a protocol. They follow the protocol's language, not the app's,
     /// so they are kept here instead of in the String Catalog.
     struct Labels: Sendable {
-        var titlePrefix: String
+        /// The title of a protocol for a meeting without a name.
+        var untitled: String
         var meetingInfo: String
         var date: String
         var location: String
@@ -20,14 +21,14 @@ enum ProtocolFormatter {
         var missingOwner: String
 
         static let swedish = Labels(
-            titlePrefix: "Protokoll", meetingInfo: "Mötesinformation", date: "Datum", location: "Plats",
+            untitled: "Protokoll", meetingInfo: "Mötesinformation", date: "Datum", location: "Plats",
             organizer: "Organisatör", attendees: "Deltagare", present: "Närvarande", absent: "Frånvarande",
             agenda: "Agenda och diskussion", decisions: "Beslut", actionItems: "Åtgärdspunkter",
             none: "Inga noterade", missingOwner: "[Ansvarig saknas]"
         )
 
         static let english = Labels(
-            titlePrefix: "Minutes", meetingInfo: "Meeting info", date: "Date", location: "Location",
+            untitled: "Minutes", meetingInfo: "Meeting info", date: "Date", location: "Location",
             organizer: "Organizer", attendees: "Attendees", present: "Present", absent: "Absent",
             agenda: "Agenda and discussion", decisions: "Decisions", actionItems: "Action items",
             none: "None noted", missingOwner: "[Owner missing]"
@@ -39,11 +40,11 @@ enum ProtocolFormatter {
         }
 
         private init(
-            titlePrefix: String, meetingInfo: String, date: String, location: String, organizer: String,
+            untitled: String, meetingInfo: String, date: String, location: String, organizer: String,
             attendees: String, present: String, absent: String, agenda: String, decisions: String,
             actionItems: String, none: String, missingOwner: String
         ) {
-            self.titlePrefix = titlePrefix
+            self.untitled = untitled
             self.meetingInfo = meetingInfo
             self.date = date
             self.location = location
@@ -59,8 +60,10 @@ enum ProtocolFormatter {
         }
     }
 
+    /// The meeting's name. The Meeting Protocols folder and the link to the note show that it is a protocol.
     static func title(for meeting: MeetingDetails, languageCode: String) -> String {
-        "\(Labels(languageCode: languageCode).titlePrefix) – \(meeting.title)"
+        let title = meeting.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty ? Labels(languageCode: languageCode).untitled : title
     }
 
     static func document(

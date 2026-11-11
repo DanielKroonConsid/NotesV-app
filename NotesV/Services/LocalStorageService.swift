@@ -15,18 +15,17 @@ actor LocalStorageService: StorageService {
     }
 
     /// `~/Library/Application Support/NotesV/Notes` (inside the app's sandbox container).
-    static func defaultRootURL() throws -> URL {
-        try FileManager.default
-            .url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            .appending(path: "NotesV/Notes", directoryHint: .isDirectory)
+    /// The folder is created when the notes are loaded, and an error then is shown to the user.
+    static func defaultRootURL() -> URL {
+        URL.applicationSupportDirectory.appending(path: "NotesV/Notes", directoryHint: .isDirectory)
     }
 
     func loadLibrary() async throws -> NoteLibrary {
         try fileManager.createDirectory(at: rootURL, withIntermediateDirectories: true)
         moveFoldersIntoNotes()
-        let previousURLs = fileURLs
-        fileURLs = [:]
-        fileHashes = [:]
+        // The paths and hashes are replaced only once everything has been read. If a folder can't
+        // be read, the earlier ones stay, so a later save still finds its file and its hash.
+        var loaded = LoadedFiles(previousURLs: fileURLs)
 
         var folders: [NoteFolder] = []
         var notes: [Note] = []
@@ -37,17 +36,20 @@ actor LocalStorageService: StorageService {
                 folders.append(folder)
             }
 
-            let fileURLs = try fileManager.contentsOfDirectory(
+            let noteURLs = try fileManager.contentsOfDirectory(
                 at: folderURL,
                 includingPropertiesForKeys: [.creationDateKey, .contentModificationDateKey],
                 options: [.skipsHiddenFiles]
-            )
-            for fileURL in fileURLs where fileURL.pathExtension.lowercased() == FileNaming.noteExtension {
-                if let note = try? readNote(at: fileURL, folderID: folder.id, previousURLs: previousURLs) {
+            ).filter { $0.pathExtension.lowercased() == FileNaming.noteExtension }
+            // Oldest first, so that of two files with the same id the original keeps it.
+            for fileURL in noteURLs.sorted(by: Self.isCreatedEarlier) {
+                if let note = try? readNote(at: fileURL, folderID: folder.id, into: &loaded) {
                     notes.append(note)
                 }
             }
         }
+        fileURLs = loaded.urls
+        fileHashes = loaded.hashes
         return NoteLibrary(folders: folders, notes: notes)
     }
 
@@ -81,11 +83,21 @@ actor LocalStorageService: StorageService {
     }
 
     func deletePermanently(_ noteID: UUID) async throws {
-        fileHashes[noteID] = nil
-        guard let fileURL = fileURLs.removeValue(forKey: noteID) else { return }
+        guard let fileURL = fileURLs[noteID] else {
+            fileHashes[noteID] = nil
+            return
+        }
         if fileManager.fileExists(atPath: fileURL.path(percentEncoded: false)) {
+            // Like `save`, never remove changes someone else has made.
+            let data = try Data(contentsOf: fileURL)
+            if let knownHash = fileHashes[noteID], SHA256.hash(data: data) != knownHash {
+                let title = MarkdownCodec.decode(String(decoding: data, as: UTF8.self)).document.title
+                throw StorageError.changedOutsideApp(title.isEmpty ? fileURL.deletingPathExtension().lastPathComponent : title)
+            }
             try fileManager.removeItem(at: fileURL)
         }
+        fileURLs[noteID] = nil
+        fileHashes[noteID] = nil
     }
 
     func createFolder(named name: String) async throws -> NoteFolder {
@@ -116,7 +128,9 @@ actor LocalStorageService: StorageService {
 
     func deleteFolder(_ folderID: NoteFolder.ID) async throws {
         let folderURL = url(forFolder: folderID)
-        let contents = (try? fileManager.contentsOfDirectory(atPath: folderURL.path(percentEncoded: false))) ?? []
+        guard fileManager.fileExists(atPath: folderURL.path(percentEncoded: false)) else { return }
+        // A folder that can't be listed throws here, so it is never taken for an empty one.
+        let contents = try fileManager.contentsOfDirectory(atPath: folderURL.path(percentEncoded: false))
         guard contents.allSatisfy({ $0.hasPrefix(".") }) else {
             throw StorageError.folderNotEmpty(folderID)
         }
@@ -125,8 +139,21 @@ actor LocalStorageService: StorageService {
 
     // MARK: - Helpers
 
-    private func readNote(at fileURL: URL, folderID: NoteFolder.ID, previousURLs: [UUID: URL]) throws -> Note {
-        let data = try Data(contentsOf: fileURL)
+    /// The paths and hashes found while loading, before they replace the stored ones.
+    private struct LoadedFiles {
+        let previousURLs: [UUID: URL]
+        var urls: [UUID: URL] = [:]
+        var hashes: [UUID: SHA256.Digest] = [:]
+    }
+
+    private static func isCreatedEarlier(_ lhs: URL, _ rhs: URL) -> Bool {
+        let lhsDate = (try? lhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantFuture
+        let rhsDate = (try? rhs.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? .distantFuture
+        return lhsDate != rhsDate ? lhsDate < rhsDate : lhs.lastPathComponent < rhs.lastPathComponent
+    }
+
+    private func readNote(at fileURL: URL, folderID: NoteFolder.ID, into loaded: inout LoadedFiles) throws -> Note {
+        var data = try Data(contentsOf: fileURL)
         guard let text = String(data: data, encoding: .utf8) else {
             throw CocoaError(.fileReadInapplicableStringEncoding)
         }
@@ -136,16 +163,16 @@ actor LocalStorageService: StorageService {
 
         // A file keeps its id between loads. A copied file has the same id as the original,
         // so the copy gets a new one.
+        let previousURLs = loaded.previousURLs
         let knownID = previousURLs.first { $0.value.standardizedFileURL == fileURL.standardizedFileURL }?.key
         var id = knownID ?? decoded.fields?.id ?? UUID()
         let originalExists = previousURLs[id].map { fileManager.fileExists(atPath: $0.path(percentEncoded: false)) } ?? false
-        if knownID == nil, fileURLs[id] != nil || originalExists {
+        let isCopy = knownID == nil && (loaded.urls[id] != nil || originalExists)
+        if isCopy {
             id = UUID()
         }
-        fileURLs[id] = fileURL
-        fileHashes[id] = SHA256.hash(data: data)
 
-        return Note(
+        let note = Note(
             id: id,
             folderID: folderID,
             created: decoded.fields?.created ?? values?.creationDate ?? fileModified,
@@ -156,8 +183,23 @@ actor LocalStorageService: StorageService {
             sentAt: decoded.fields?.sentAt,
             task: decoded.fields?.task?.readingText(from: decoded.document),
             actionItems: decoded.fields?.actionItems ?? [],
+            extraFrontMatter: decoded.fields?.extraEntries ?? [],
             document: decoded.document
         )
+
+        // A copy's new id is written to its file at once. Otherwise the next launch could give the
+        // original's id to whichever file it reads first, and links to the original would follow it.
+        // Only the id line changes, so nothing else in the file is touched.
+        if isCopy, let oldID = decoded.fields?.id,
+           let range = text.range(of: "\nid: \(oldID.uuidString)", options: .caseInsensitive) {
+            let copyData = Data(text.replacingCharacters(in: range, with: "\nid: \(id.uuidString)").utf8)
+            if (try? copyData.write(to: fileURL, options: .atomic)) != nil {
+                data = copyData
+            }
+        }
+        loaded.urls[id] = fileURL
+        loaded.hashes[id] = SHA256.hash(data: data)
+        return note
     }
 
     private var notesFolderURL: URL {

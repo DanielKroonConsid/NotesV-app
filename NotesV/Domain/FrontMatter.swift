@@ -2,8 +2,8 @@ import Foundation
 
 /// Reads and writes the YAML front matter at the top of a note file.
 ///
-/// Only the small YAML subset that NotesV writes is supported: `key: value` pairs, one level of
-/// nested mappings, and the list of mappings (`tasks`) earlier versions wrote. Unknown keys are ignored.
+/// Only a small YAML subset is supported; `parse` describes it. Keys NotesV doesn't use are kept as
+/// they were written and saved again, so other apps' metadata survives.
 enum FrontMatter {
     /// The metadata stored in the front matter. Every field is optional, because files edited
     /// outside the app may lack some or all of it.
@@ -18,6 +18,14 @@ enum FrontMatter {
         /// A task's details. Its title, note and subtasks are in the file's body.
         var task: ActionItem?
         var actionItems: [ActionItem] = []
+        /// Top-level entries NotesV doesn't use, written back unchanged.
+        var extraEntries: [RawEntry] = []
+    }
+
+    /// A top-level key NotesV doesn't read, with its lines exactly as they were written.
+    struct RawEntry: Hashable, Sendable {
+        var key: String
+        var lines: [String]
     }
 
     static let delimiter = "---"
@@ -75,23 +83,37 @@ enum FrontMatter {
                 lines.append("    status: \(item.status.rawValue)")
             }
         }
+        // Another app's keys go last. One NotesV now writes itself, such as a meeting that
+        // couldn't be read before, replaces the old version.
+        let writtenKeys = Set(lines.dropFirst().compactMap { topLevelKey($0[...]) })
+        for entry in note.extraFrontMatter where !writtenKeys.contains(entry.key) {
+            lines += entry.lines
+        }
         lines.append(delimiter)
         return lines.joined(separator: "\n") + "\n"
     }
 
     /// Splits a file into its front matter fields and the Markdown body after it.
-    /// Returns `nil` fields if the file has no front matter.
+    /// Returns `nil` fields if the file has no front matter. Expects `\n` line endings.
     static func split(_ text: String) -> (fields: Fields?, body: Substring) {
-        guard text.hasPrefix(delimiter + "\n") else { return (nil, Substring(text)) }
+        // Trailing spaces after a delimiter are allowed, and YAML's `...` also ends the block.
+        func isDelimiter(_ line: Substring, closing: Bool) -> Bool {
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            return trimmed == delimiter || closing && trimmed == "..."
+        }
 
-        let afterOpening = text.index(text.startIndex, offsetBy: delimiter.count + 1)
+        let firstLineEnd = text.firstIndex(of: "\n") ?? text.endIndex
+        guard firstLineEnd < text.endIndex, isDelimiter(text[..<firstLineEnd], closing: false) else {
+            return (nil, Substring(text))
+        }
+
         var lines: [Substring] = []
-        var cursor = afterOpening
+        var cursor = text.index(after: firstLineEnd)
         while cursor < text.endIndex {
             let lineEnd = text[cursor...].firstIndex(of: "\n") ?? text.endIndex
             let line = text[cursor..<lineEnd]
             let next = lineEnd < text.endIndex ? text.index(after: lineEnd) : lineEnd
-            if line == delimiter {
+            if isDelimiter(line, closing: true) {
                 return (parse(lines), text[next...])
             }
             lines.append(line)
@@ -103,48 +125,44 @@ enum FrontMatter {
 
     // MARK: - Parsing
 
+    /// A top-level key and the lines that belong to it.
+    private struct Block {
+        var key: String
+        /// The text after the key's colon.
+        var value: Substring
+        /// The indented lines under the key, and list items written without indentation.
+        var body: [Substring] = []
+        /// The key's line and its body as they were written.
+        var lines: [Substring]
+    }
+
+    /// Reads a small subset of YAML:
+    /// - The top level is `key: value` lines. A line that starts with a space, a tab or `- ` belongs
+    ///   to the key above it.
+    /// - `meeting` and `task` are maps of `key: value` lines. A value can be a list on one line
+    ///   (`["Ada", "Bo"]`), a list of `- item` lines, or a block (`|` keeps line breaks, `>` joins lines).
+    /// - `tasks` is the list of maps earlier versions wrote.
+    /// - Any other top-level key is kept as it was written (`extraEntries`), and so is a meeting
+    ///   whose start can't be read, so that saving the note doesn't remove it from the file.
     private static func parse(_ lines: [Substring]) -> Fields {
         var fields = Fields()
         var values: [String: String] = [:]
-        var meetingValues: [String: String] = [:]
-        var attendees: [String] = []
-        var taskValues: [[String: String]] = []
-        var taskSubtasks: [[String]] = []
-        var singleTaskValues: [String: String] = [:]
-        var currentMap: String?
+        var meetingBlock: Block?
+        var taskBlock: Block?
+        var tasksBlock: Block?
 
-        for var line in lines {
-            if currentMap == "tasks", let dash = line.firstIndex(of: "-"),
-               line[..<dash].allSatisfy({ $0 == " " }), line[line.index(after: dash)...].first == " " {
-                taskValues.append([:])
-                taskSubtasks.append([])
-                line = "  " + line[line.index(after: dash)...]
-            }
-            guard let colon = line.firstIndex(of: ":") else { continue }
-            let isIndented = line.first == " " || line.first == "\t"
-            let key = line[..<colon].trimmingCharacters(in: .whitespaces)
-            let rawValue = line[line.index(after: colon)...]
-            let value = parseScalar(rawValue)
-
-            if isIndented, currentMap == "meeting" {
-                if key == "attendees" {
-                    attendees = parseList(rawValue)
-                } else {
-                    meetingValues[key] = value
-                }
-            } else if isIndented, currentMap == "task" {
-                singleTaskValues[key] = value
-            } else if isIndented, currentMap == "tasks" {
-                if !taskValues.isEmpty {
-                    if key == "subtasks" {
-                        taskSubtasks[taskSubtasks.count - 1] = parseList(rawValue)
-                    } else {
-                        taskValues[taskValues.count - 1][key] = value
-                    }
-                }
-            } else if !isIndented {
-                currentMap = value.isEmpty ? key : nil
-                values[key] = value
+        for block in topLevelBlocks(lines) {
+            switch block.key {
+            case "id", "created", "modified", "pinned", "sourceNote", "sent":
+                values[block.key] = parseScalar(block.value)
+            case "meeting":
+                meetingBlock = block
+            case "task":
+                taskBlock = block
+            case "tasks":
+                tasksBlock = block
+            default:
+                fields.extraEntries.append(RawEntry(key: block.key, lines: block.lines.map(String.init)))
             }
         }
 
@@ -154,25 +172,151 @@ enum FrontMatter {
         fields.isPinned = values["pinned"].map { $0.lowercased() == "true" }
         fields.sourceNoteID = values["sourceNote"].flatMap(UUID.init(uuidString:))
         fields.sentAt = values["sent"].flatMap(parseDate)
-        fields.actionItems = zip(taskValues, taskSubtasks).compactMap(parseActionItem)
-        if !singleTaskValues.isEmpty {
-            fields.task = parseTaskDetails(singleTaskValues)
+        if let tasksBlock {
+            fields.actionItems = parseActionItems(tasksBlock.body)
         }
-        if let start = meetingValues["start"].flatMap(parseDate) {
-            // Older notes have an empty eventId for meetings that didn't come from Outlook.
-            let eventID = meetingValues["eventId"].flatMap { $0.isEmpty ? nil : $0 }
-            fields.meeting = MeetingDetails(
-                eventID: eventID,
-                title: meetingValues["subject"] ?? "",
-                start: start,
-                end: meetingValues["end"].flatMap(parseDate),
-                location: meetingValues["location"] ?? "",
-                organizer: meetingValues["organizer"] ?? "",
-                attendees: attendees,
-                agenda: meetingValues["agenda"] ?? ""
-            )
+        if let taskBlock {
+            let map = parseMap(taskBlock.body)
+            if !map.scalars.isEmpty {
+                fields.task = parseTaskDetails(map.scalars)
+            }
+        }
+        if let meetingBlock {
+            let map = parseMap(meetingBlock.body)
+            if let start = map.scalars["start"].flatMap(parseDate) {
+                // Older notes have an empty eventId for meetings that didn't come from Outlook.
+                let eventID = map.scalars["eventId"].flatMap { $0.isEmpty ? nil : $0 }
+                fields.meeting = MeetingDetails(
+                    eventID: eventID,
+                    title: map.scalars["subject"] ?? "",
+                    start: start,
+                    end: map.scalars["end"].flatMap(parseDate),
+                    location: map.scalars["location"] ?? "",
+                    organizer: map.scalars["organizer"] ?? "",
+                    attendees: map.lists["attendees"] ?? [],
+                    agenda: map.scalars["agenda"] ?? ""
+                )
+            } else {
+                fields.extraEntries.append(RawEntry(key: meetingBlock.key, lines: meetingBlock.lines.map(String.init)))
+            }
         }
         return fields
+    }
+
+    private static func topLevelBlocks(_ lines: [Substring]) -> [Block] {
+        var blocks: [Block] = []
+        for line in lines {
+            if let key = topLevelKey(line), let colon = line.firstIndex(of: ":") {
+                blocks.append(Block(key: key, value: line[line.index(after: colon)...], lines: [line]))
+            } else if !blocks.isEmpty {
+                blocks[blocks.count - 1].body.append(line)
+                blocks[blocks.count - 1].lines.append(line)
+            }
+        }
+        // Blank lines at the end of a block belong to neither key.
+        for index in blocks.indices {
+            while let last = blocks[index].lines.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+                blocks[index].lines.removeLast()
+            }
+        }
+        return blocks
+    }
+
+    /// The key of a line that starts a top-level entry, or `nil` for any other line.
+    private static func topLevelKey(_ line: Substring) -> String? {
+        guard let first = line.first, ![" ", "\t", "-", "#"].contains(first),
+              let colon = line.firstIndex(of: ":") else { return nil }
+        let key = line[..<colon].trimmingCharacters(in: .whitespaces)
+        return key.isEmpty ? nil : key
+    }
+
+    /// Reads the `key: value` lines of a map. Lists are also returned as `lists`.
+    private static func parseMap(_ lines: [Substring]) -> (scalars: [String: String], lists: [String: [String]]) {
+        var scalars: [String: String] = [:]
+        var lists: [String: [String]] = [:]
+        var index = 0
+        while index < lines.count {
+            let line = lines[index]
+            index += 1
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+            guard !trimmed.isEmpty, !trimmed.hasPrefix("#"), let colon = line.firstIndex(of: ":") else { continue }
+            let indent = indentation(of: line)
+            let key = line[..<colon].trimmingCharacters(in: .whitespaces)
+            let rawValue = line[line.index(after: colon)...]
+            let value = rawValue.trimmingCharacters(in: .whitespaces)
+
+            if value.isEmpty || value.hasPrefix("#") {
+                // A list of `- item` lines, which may be at the key's own indentation.
+                var items: [String] = []
+                while index < lines.count {
+                    let item = lines[index].trimmingCharacters(in: .whitespaces)
+                    if item.isEmpty {
+                        index += 1
+                        continue
+                    }
+                    guard indentation(of: lines[index]) >= indent, item == "-" || item.hasPrefix("- ") else { break }
+                    items.append(parseScalar(item.dropFirst()))
+                    index += 1
+                }
+                scalars[key] = ""
+                lists[key] = items.filter { !$0.isEmpty }
+            } else if let folds = blockScalarFolds(value) {
+                var content: [Substring] = []
+                while index < lines.count {
+                    let next = lines[index]
+                    if !next.trimmingCharacters(in: .whitespaces).isEmpty, indentation(of: next) <= indent { break }
+                    content.append(next)
+                    index += 1
+                }
+                while let last = content.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+                    content.removeLast()
+                }
+                let margin = content.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.map(indentation).min() ?? 0
+                let text = content.map { String($0.dropFirst(min(margin, indentation(of: $0)))) }
+                scalars[key] = text.joined(separator: folds ? " " : "\n")
+            } else {
+                scalars[key] = parseScalar(rawValue)
+                if value.hasPrefix("[") {
+                    lists[key] = parseList(rawValue)
+                }
+            }
+        }
+        return (scalars, lists)
+    }
+
+    /// For a block value's indicator: `true` if its lines are joined (`>`), `false` if kept (`|`).
+    private static func blockScalarFolds(_ value: String) -> Bool? {
+        guard let indicator = value.first, indicator == "|" || indicator == ">" else { return nil }
+        let rest = value.dropFirst().split(separator: "#", maxSplits: 1).first ?? ""
+        guard rest.trimmingCharacters(in: .whitespaces).allSatisfy({ "+-0123456789".contains($0) }) else { return nil }
+        return indicator == ">"
+    }
+
+    private static func indentation(of line: Substring) -> Int {
+        line.prefix { $0 == " " || $0 == "\t" }.count
+    }
+
+    /// The list of tasks earlier versions wrote: `- source: …` followed by the task's other keys.
+    private static func parseActionItems(_ lines: [Substring]) -> [ActionItem] {
+        var taskValues: [[String: String]] = []
+        var taskSubtasks: [[String]] = []
+        for var line in lines {
+            if let dash = line.firstIndex(of: "-"),
+               line[..<dash].allSatisfy({ $0 == " " }), line[line.index(after: dash)...].first == " " {
+                taskValues.append([:])
+                taskSubtasks.append([])
+                line = line[line.index(after: dash)...]
+            }
+            guard !taskValues.isEmpty, let colon = line.firstIndex(of: ":") else { continue }
+            let key = line[..<colon].trimmingCharacters(in: .whitespaces)
+            let rawValue = line[line.index(after: colon)...]
+            if key == "subtasks" {
+                taskSubtasks[taskSubtasks.count - 1] = parseList(rawValue)
+            } else {
+                taskValues[taskValues.count - 1][key] = parseScalar(rawValue)
+            }
+        }
+        return zip(taskValues, taskSubtasks).compactMap(parseActionItem)
     }
 
     private static func parseTaskDetails(_ values: [String: String]) -> ActionItem {
@@ -294,6 +438,26 @@ enum FrontMatter {
         if let date = try? Date(text, strategy: .iso8601) {
             return date
         }
-        return try? Date(text, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true))
+        if let date = try? Date(text, strategy: Date.ISO8601FormatStyle(includingFractionalSeconds: true)) {
+            return date
+        }
+        return parseLocalDate(text)
+    }
+
+    /// Dates other editors often write without a time zone, read as local time:
+    /// `2026-10-20`, `2026-10-20 09:00`, `2026-10-20T09:00` and the same with seconds.
+    private static func parseLocalDate(_ text: String) -> Date? {
+        let pattern = /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/
+        guard let match = text.trimmingCharacters(in: .whitespaces).wholeMatch(of: pattern) else { return nil }
+        let calendar = Calendar.current
+        var components = DateComponents(
+            calendar: calendar, timeZone: calendar.timeZone,
+            year: Int(match.1), month: Int(match.2), day: Int(match.3),
+            hour: match.4.flatMap { Int($0) } ?? 0, minute: match.5.flatMap { Int($0) } ?? 0,
+            second: match.6.flatMap { Int($0) } ?? 0
+        )
+        components.calendar = calendar
+        guard components.isValidDate(in: calendar) else { return nil }
+        return calendar.date(from: components)
     }
 }

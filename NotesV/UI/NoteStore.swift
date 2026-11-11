@@ -280,6 +280,10 @@ final class NoteStore {
     /// note that already exists in `destination` is left as it is.
     func moveLibrary(to destination: any StorageService) async throws {
         await flushPendingSaves()
+        // The copy is made from the files, so a change that only exists here would be lost.
+        guard unsavedNoteIDs.isEmpty else {
+            throw StorageError.unsavedChanges(unsavedNoteIDs.count)
+        }
         let source = try await storage.loadLibrary()
         let target = try await destination.loadLibrary()
 
@@ -650,12 +654,15 @@ final class NoteStore {
     // MARK: - Saving
 
     /// Saves everything that is waiting to be saved and drops an empty selected note. Call before quitting.
-    func prepareForTermination() async {
+    /// Returns how many notes still couldn't be saved.
+    @discardableResult
+    func prepareForTermination() async -> Int {
         await flushPendingSaves()
         if let selectedNoteID, notes[selectedNoteID]?.hasContent == false {
             notes[selectedNoteID] = nil
             try? await storage.deletePermanently(selectedNoteID)
         }
+        return unsavedNoteIDs.count
     }
 
     private func scheduleSave(_ noteID: UUID) {
@@ -670,7 +677,10 @@ final class NoteStore {
     private func save(_ noteID: UUID) async {
         saveTasks[noteID] = nil
         // Empty notes are not saved, like in Notes.
-        guard let note = notes[noteID], note.hasContent else { return }
+        guard let note = notes[noteID], note.hasContent else {
+            unsavedNoteIDs.remove(noteID)
+            return
+        }
         do {
             try await storage.save(note)
             unsavedNoteIDs.remove(noteID)
@@ -688,7 +698,8 @@ final class NoteStore {
         let copy = Note(
             folderID: note.folderID, created: note.created, modified: note.modified, isPinned: note.isPinned,
             meeting: note.meeting, sourceNoteID: note.sourceNoteID, sentAt: note.sentAt,
-            task: note.task, actionItems: note.actionItems, document: note.document
+            task: note.task, actionItems: note.actionItems, extraFrontMatter: note.extraFrontMatter,
+            document: note.document
         )
         notes[copy.id] = copy
         do {
@@ -701,8 +712,9 @@ final class NoteStore {
         }
     }
 
+    /// Saves the notes waiting to be saved, and tries again with those that failed before.
     private func flushPendingSaves() async {
-        for noteID in Array(saveTasks.keys) {
+        for noteID in Set(saveTasks.keys).union(unsavedNoteIDs) {
             saveTasks[noteID]?.cancel()
             await save(noteID)
         }

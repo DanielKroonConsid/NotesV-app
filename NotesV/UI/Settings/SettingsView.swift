@@ -17,6 +17,7 @@ struct SettingsView: View {
 
 struct AISettingsView: View {
     @Environment(AISettings.self) private var settings
+    @State private var isConfirmingKeyRemoval = false
 
     var body: some View {
         @Bindable var settings = settings
@@ -48,6 +49,19 @@ struct AISettingsView: View {
                     text: $settings.apiKey,
                     prompt: settings.configuration.isLocal ? Text("Optional") : Text("Required")
                 )
+                if settings.hasStoredKey {
+                    LabeledContent {
+                        Button("Remove Key…", role: .destructive) {
+                            isConfirmingKeyRemoval = true
+                        }
+                    } label: {
+                        if settings.apiKey.isEmpty {
+                            Text("The saved key is still used until you remove it.")
+                                .font(.callout)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
 
             Section("Model") {
@@ -81,6 +95,12 @@ struct AISettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .confirmationDialog("Remove the API key?", isPresented: $isConfirmingKeyRemoval, titleVisibility: .visible) {
+            Button("Remove Key", role: .destructive) { settings.removeAPIKey() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The key is deleted from the Keychain on this Mac and can’t be restored. You need to enter it again to use this server.")
+        }
         .fixedSize(horizontal: false, vertical: true)
     }
 

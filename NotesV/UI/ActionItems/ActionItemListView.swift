@@ -11,6 +11,7 @@ struct ActionItemListView: View {
     @State private var editedRow: ActionItemRow?
     @State private var isCreating = false
     @State private var rowToRemove: ActionItemRow?
+    @State private var rowToComplete: ActionItemRow?
 
     private var sections: [ActionItemOverview.Section] {
         ActionItemOverview.sections(
@@ -25,7 +26,7 @@ struct ActionItemListView: View {
                 ForEach(sections) { section in
                     Section {
                         ForEach(section.rows) { row in
-                            ActionItemRowView(row: row)
+                            ActionItemRowView(row: row) { rowToComplete = row }
                                 .tag(row.id)
                         }
                     } header: {
@@ -80,6 +81,17 @@ struct ActionItemListView: View {
         }
         .sheet(isPresented: $isReviewing) {
             ActionItemReviewSheet()
+        }
+        .alert(
+            "Mark this task as completed?",
+            isPresented: Binding(get: { rowToComplete != nil }, set: { if !$0 { rowToComplete = nil } }),
+            presenting: rowToComplete
+        ) { row in
+            Button("Cancel", role: .cancel) {}
+            Button("Mark as Completed") { store.setActionItem(row.id, done: true) }
+                .keyboardShortcut(.defaultAction)
+        } message: { row in
+            Text(verbatim: row.item.task)
         }
         .alert(
             "Remove this task from the list?",
@@ -202,6 +214,8 @@ private struct ActionItemSectionHeader: View {
 
 private struct ActionItemRowView: View {
     let row: ActionItemRow
+    /// Asks before a task is completed. Reopening a task needs no confirmation.
+    let confirmCompletion: () -> Void
 
     @Environment(NoteStore.self) private var store
 
@@ -209,7 +223,13 @@ private struct ActionItemRowView: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Toggle("Completed", isOn: Binding(
                 get: { row.isDone },
-                set: { store.setActionItem(row.id, done: $0) }
+                set: { done in
+                    if done {
+                        confirmCompletion()
+                    } else {
+                        store.setActionItem(row.id, done: false)
+                    }
+                }
             ))
             .labelsHidden()
 

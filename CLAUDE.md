@@ -81,7 +81,7 @@ The **Tasks** view in the sidebar collects the checkboxes in all protocols, sent
 - A task can have a **note** and **subtasks**. They belong to the task only: they aren't in the protocol's text, in Copy for Email or sent to the AI provider. A task and its subtasks are ticked independently.
 - The overview has the tabs Mine, Others, All, Backlog and Completed. A task in the first three is open and not in the backlog.
 - **Backlog** tasks are for later and have no due date, so moving a task there removes its date (`backlog: true`).
-- Ticking a task moves it to Completed, and unticking it returns it to its tab.
+- Ticking a task asks for confirmation, then moves it to Completed. Unticking it returns it to its tab without asking.
 
 ## Storage
 

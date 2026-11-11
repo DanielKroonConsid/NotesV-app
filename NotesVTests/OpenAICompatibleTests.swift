@@ -191,7 +191,7 @@ struct OpenAIProtocolGeneratorTests {
         let result = try await makeGenerator(transport).generateProtocol(meeting: meeting, notes: notes, language: .automatic)
 
         #expect(result.minutes.language == "sv")
-        #expect(ProtocolFormatter.title(for: meeting, languageCode: result.minutes.language) == "Protokoll – Weekly sync")
+        #expect(ProtocolFormatter.title(for: meeting, languageCode: result.minutes.language) == "Weekly sync")
     }
 
     @Test func aPickedLanguageOverridesTheAnswer() async throws {
@@ -277,7 +277,7 @@ struct ProtocolFormatterTests {
         )
         let document = ProtocolFormatter.document(for: minutes, meeting: meeting, timeZone: TimeZone(identifier: "UTC")!)
 
-        #expect(document.title == "Protokoll – Veckomöte")
+        #expect(document.title == "Veckomöte")
         let headings = document.blocks.compactMap { block -> String? in
             if case .paragraph(.heading, let text) = block { text.plainText } else { nil }
         }
@@ -319,7 +319,7 @@ struct ProtocolFormatterTests {
     @Test func usesEnglishForOtherLanguages() {
         let meeting = MeetingDetails(title: "Sync", start: .now)
         let document = ProtocolFormatter.document(for: MeetingProtocol(language: "de"), meeting: meeting)
-        #expect(document.title == "Minutes – Sync")
+        #expect(document.title == "Sync")
     }
 }
 

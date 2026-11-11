@@ -21,8 +21,7 @@ Appen fyller i det den kan läsa från raden, som i protokollet har formen `uppg
 
 - **Uppgift:** texten som visas i listan.
 - **Ansvarig:** skriv ett namn, eller välj **Jag**, en person från mötet eller **Ingen ansvarig** med personikonen.
-- **Förfallodatum:** slå på rutan och välj ett datum.
-- **Backlogg:** lägg uppgiften bland framtida uppgifter, utan datum.
+- **Förfallodatum:** välj **Inget förfallodatum**, **Förfallodatum** med ett datum, eller **Backlogg** för en framtida uppgift utan datum.
 - **Notering** och **Underuppgifter:** se nedan.
 
 Sedan väljer du vad som ska hända med varje rad:
@@ -81,13 +80,13 @@ Sökfältet filtrerar den valda fliken. Det söker i uppgiften, ansvarig, mötet
 | Se protokollet | Klicka en gång på uppgiften. Det visas i högerkolumnen |
 | Ändra uppgiften | Dubbelklicka, eller högerklicka och välj **Ändra…** |
 | Öppna protokollet i eget fönster | Högerklicka och välj **Öppna protokollet i eget fönster** |
-| Flytta till eller från backloggen | Högerklicka, eller ändra **Backlogg** i rutan |
-| Bocka av | Klicka på checkboxen |
+| Flytta till eller från backloggen | Högerklicka, eller välj **Backlogg** vid förfallodatum i **Ändra…** |
+| Bocka av | Klicka på checkboxen och bekräfta med **Markera som klar** |
 | Ta bort | Högerklicka, välj **Ta bort från listan** och bekräfta med **OK** |
 
 ## Avklarade uppgifter
 
-En avbockad uppgift flyttas till **Avklarade**. Tar du bort bocken går den tillbaka till sin flik, även till **Backlogg** om den låg där.
+Appen frågar innan en uppgift markeras som klar. En avbockad uppgift flyttas sedan till **Avklarade**. Tar du bort bocken går den tillbaka till sin flik, även till **Backlogg** om den låg där.
 
 För protokolluppgifter följer bocken checkboxen i protokollet åt båda håll. Bockar du av i listan bockas raden i protokollet, och tvärtom. Har raden tagits bort från protokollet gäller uppgiftens egen status.
 

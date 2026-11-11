@@ -28,6 +28,16 @@ enum SettingsFile {
         return snapshot
     }
 
+    /// Whether `write` may replace the file. A file this version can't read is kept, since it may
+    /// come from a newer version or be a sync that hasn't finished, and holds settings worth keeping.
+    static func canOverwrite(in rootURL: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url(in: rootURL)) else {
+            return !FileManager.default.fileExists(atPath: url(in: rootURL).path(percentEncoded: false))
+        }
+        guard let snapshot = try? JSONDecoder().decode(AppSettingsSnapshot.self, from: data) else { return false }
+        return snapshot.version <= AppSettingsSnapshot.currentVersion
+    }
+
     static func write(_ snapshot: AppSettingsSnapshot, in rootURL: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]

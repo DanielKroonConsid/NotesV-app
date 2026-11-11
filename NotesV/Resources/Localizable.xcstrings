@@ -51,22 +51,92 @@
         }
       }
     },
+    "%lld notes couldn’t be saved, so the notes folder wasn’t changed. Check that the current folder is available and try again.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld note couldn’t be saved, so the notes folder wasn’t changed. Check that the current folder is available and try again."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld notes couldn’t be saved, so the notes folder wasn’t changed. Check that the current folder is available and try again."
+                }
+              }
+            }
+          }
+        },
+        "sv": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld anteckning kunde inte sparas, så lagringsmappen byttes inte. Kontrollera att den nuvarande mappen är tillgänglig och försök igen."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld anteckningar kunde inte sparas, så lagringsmappen byttes inte. Kontrollera att den nuvarande mappen är tillgänglig och försök igen."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld notes couldn’t be saved.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld note couldn’t be saved."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld notes couldn’t be saved."
+                }
+              }
+            }
+          }
+        },
+        "sv": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld anteckning kunde inte sparas."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld anteckningar kunde inte sparas."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "A folder named “%@” already exists.": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Det finns redan en mapp som heter ”%@”."
-          }
-        }
-      }
-    },
-    "A task for later, without a due date": {
-      "localizations": {
-        "sv": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En uppgift för senare, utan förfallodatum"
           }
         }
       }
@@ -671,6 +741,16 @@
         }
       }
     },
+    "If you quit now, the changes in them are lost. Cancel to keep NotesV open and copy the text somewhere else, or check that the notes folder is available.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Om du avslutar nu går ändringarna i dem förlorade. Välj Avbryt för att hålla NotesV öppet och kopiera texten någon annanstans, eller kontrollera att lagringsmappen är tillgänglig."
+          }
+        }
+      }
+    },
     "Ignore": {
       "localizations": {
         "sv": {
@@ -801,6 +881,16 @@
         }
       }
     },
+    "Mark as Completed": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera som klar"
+          }
+        }
+      }
+    },
     "Mark as Not Sent": {
       "localizations": {
         "sv": {
@@ -817,6 +907,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Markera som skickad"
+          }
+        }
+      }
+    },
+    "Mark this task as completed?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markera uppgiften som klar?"
           }
         }
       }
@@ -1081,6 +1181,16 @@
         }
       }
     },
+    "No due date": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inget förfallodatum"
+          }
+        }
+      }
+    },
     "No owner": {
       "localizations": {
         "sv": {
@@ -1341,12 +1451,42 @@
         }
       }
     },
+    "Quit Anyway": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avsluta ändå"
+          }
+        }
+      }
+    },
     "Recently Deleted": {
       "localizations": {
         "sv": {
           "stringUnit": {
             "state": "translated",
             "value": "Nyligen raderade"
+          }
+        }
+      }
+    },
+    "Remove Key": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort nyckel"
+          }
+        }
+      }
+    },
+    "Remove Key…": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort nyckel…"
           }
         }
       }
@@ -1367,6 +1507,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta bort från listan"
+          }
+        }
+      }
+    },
+    "Remove the API key?": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta bort API-nyckeln?"
           }
         }
       }
@@ -1761,6 +1911,16 @@
         }
       }
     },
+    "The key is deleted from the Keychain on this Mac and can’t be restored. You need to enter it again to use this server.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nyckeln raderas från Nyckelringen på den här Macen och kan inte återställas. Du behöver ange den igen för att använda servern."
+          }
+        }
+      }
+    },
     "The model’s answer couldn’t be read as a protocol. Try again or choose another model.": {
       "localizations": {
         "sv": {
@@ -1817,6 +1977,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Protokollet säger: %@"
+          }
+        }
+      }
+    },
+    "The saved key is still used until you remove it.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Den sparade nyckeln används tills du tar bort den."
           }
         }
       }
@@ -2057,6 +2227,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dina inställningar sparas också som settings.json i anteckningsmappen, så att du kan få tillbaka dem på en ny Mac. API-nycklar sparas aldrig där, så dem anger du igen."
+          }
+        }
+      }
+    },
+    "settings.json in the notes folder is from a newer version of NotesV or can’t be read, so it isn’t replaced. Your settings are still saved on this Mac.": {
+      "localizations": {
+        "sv": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "settings.json i lagringsmappen kommer från en nyare version av NotesV eller kan inte läsas, så den ersätts inte. Dina inställningar finns kvar på den här Macen."
           }
         }
       }
