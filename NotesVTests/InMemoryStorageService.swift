@@ -10,7 +10,17 @@ actor InMemoryStorageService: StorageService {
         NoteLibrary(folders: folders, notes: Array(savedNotes.values))
     }
 
+    /// Makes every save fail, like a notes folder that has gone away.
+    private var failsToSave = false
+
+    func setFailsToSave(_ fails: Bool) {
+        failsToSave = fails
+    }
+
     func save(_ note: Note) async throws {
+        if failsToSave {
+            throw CocoaError(.fileWriteNoPermission)
+        }
         savedNotes[note.id] = note
     }
 

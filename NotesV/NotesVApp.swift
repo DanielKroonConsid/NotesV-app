@@ -61,9 +61,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         } else {
             aiSettings = AISettings()
             profileSettings = ProfileSettings()
-            let rootURL = (try? LocalStorageService.defaultRootURL())
-                ?? FileManager.default.temporaryDirectory.appending(path: "NotesV")
-            storageSettings = StorageSettings(defaultRootURL: rootURL)
+            // Never a temporary folder as a fallback: macOS empties those, and the notes with them.
+            storageSettings = StorageSettings(defaultRootURL: LocalStorageService.defaultRootURL())
         }
         store = NoteStore(storage: LocalStorageService(rootURL: storageSettings.rootURL))
         settingsBackup = SettingsBackup(aiSettings: aiSettings, profile: profileSettings, storage: storageSettings)
@@ -89,10 +88,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         Task {
-            await store.prepareForTermination()
+            let unsavedCount = await store.prepareForTermination()
             settingsBackup.writeNow()
-            sender.reply(toApplicationShouldTerminate: true)
+            sender.reply(toApplicationShouldTerminate: unsavedCount == 0 || confirmQuitWithUnsavedNotes(unsavedCount))
         }
         return .terminateLater
+    }
+
+    /// Asks before quitting with notes that couldn't be saved, since their changes would be lost.
+    private func confirmQuitWithUnsavedNotes(_ count: Int) -> Bool {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = String(localized: "\(count) notes couldn’t be saved.")
+        var details = [String(localized: "If you quit now, the changes in them are lost. Cancel to keep NotesV open and copy the text somewhere else, or check that the notes folder is available.")]
+        if let errorMessage = store.errorMessage {
+            details.insert(errorMessage, at: 0)
+        }
+        alert.informativeText = details.joined(separator: "\n\n")
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        alert.addButton(withTitle: String(localized: "Quit Anyway"))
+        return alert.runModal() == .alertSecondButtonReturn
     }
 }

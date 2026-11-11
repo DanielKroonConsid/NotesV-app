@@ -26,15 +26,38 @@ final class AISettings {
         }
     }
 
-    /// The API key as typed in Settings. Saved to the Keychain on every change.
+    /// The API key as typed in Settings. Saved to the Keychain on every change, except that an
+    /// empty field never deletes the saved key: that takes `removeAPIKey()`, after the user confirms.
     var apiKey = "" {
         didSet {
-            guard apiKey != oldValue, !isLoadingKey else { return }
+            guard apiKey != oldValue, !isLoadingKey, !apiKey.isEmpty else { return }
             do {
                 try keychain.setPassword(apiKey, for: keychainAccount)
+                hasStoredKey = true
             } catch {
                 connectionStatus = .failed(error.localizedDescription)
             }
+        }
+    }
+
+    /// Whether the Keychain holds a key for this server, even while the field is empty.
+    private(set) var hasStoredKey = false
+
+    /// The key requests use: the one typed, or the saved one while the field is empty.
+    private var effectiveAPIKey: String {
+        guard apiKey.isEmpty, hasStoredKey else { return apiKey }
+        return (try? keychain.password(for: keychainAccount)) ?? ""
+    }
+
+    func removeAPIKey() {
+        do {
+            try keychain.setPassword(nil, for: keychainAccount)
+            hasStoredKey = false
+            isLoadingKey = true
+            apiKey = ""
+            isLoadingKey = false
+        } catch {
+            connectionStatus = .failed(error.localizedDescription)
         }
     }
 
@@ -72,7 +95,7 @@ final class AISettings {
     func testConnection() async {
         connectionStatus = .testing
         do {
-            let client = try OpenAICompatibleClient(configuration: configuration, apiKey: apiKey, transport: URLSessionTransport())
+            let client = try OpenAICompatibleClient(configuration: configuration, apiKey: effectiveAPIKey, transport: URLSessionTransport())
             let models = try await client.listModels()
             availableModels = models.map(\.id).sorted()
             connectionStatus = .connected(modelCount: models.count)
@@ -86,7 +109,7 @@ final class AISettings {
         _ = try configuration.validatedBaseURL()
         return OpenAIProtocolGenerator(
             configuration: configuration,
-            apiKey: apiKey.isEmpty ? nil : apiKey,
+            apiKey: effectiveAPIKey.isEmpty ? nil : effectiveAPIKey,
             modelResolver: modelResolver
         )
     }
@@ -96,8 +119,10 @@ final class AISettings {
         defer { isLoadingKey = false }
         do {
             apiKey = try keychain.password(for: keychainAccount) ?? ""
+            hasStoredKey = !apiKey.isEmpty
         } catch {
             apiKey = ""
+            hasStoredKey = false
             connectionStatus = .failed(error.localizedDescription)
         }
     }

@@ -70,6 +70,10 @@ final class SettingsBackup {
         writeTask?.cancel()
         writeTask = nil
         guard pendingRestore == nil else { return }
+        guard SettingsFile.canOverwrite(in: storage.rootURL) else {
+            errorMessage = String(localized: "settings.json in the notes folder is from a newer version of NotesV or can’t be read, so it isn’t replaced. Your settings are still saved on this Mac.")
+            return
+        }
         do {
             try SettingsFile.write(current, in: storage.rootURL)
             errorMessage = nil

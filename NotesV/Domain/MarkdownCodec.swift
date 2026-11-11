@@ -21,7 +21,11 @@ enum MarkdownCodec {
     }
 
     static func decode(_ text: String) -> DecodedNote {
-        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
+        // A byte order mark and old Mac line endings would hide the front matter.
+        var normalized = text.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\r", with: "\n")
+        if normalized.unicodeScalars.first == "\u{FEFF}" {
+            normalized.unicodeScalars.removeFirst()
+        }
         let (fields, body) = FrontMatter.split(normalized)
         var bodyText = body
         if fields != nil, bodyText.first == "\n" {

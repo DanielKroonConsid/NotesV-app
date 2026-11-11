@@ -28,6 +28,7 @@ enum StorageError: LocalizedError {
     case folderAlreadyExists(String)
     case folderNotEmpty(String)
     case changedOutsideApp(String)
+    case unsavedChanges(Int)
 
     var errorDescription: String? {
         switch self {
@@ -37,6 +38,8 @@ enum StorageError: LocalizedError {
             String(localized: "The folder “\(name)” isn’t empty.")
         case .changedOutsideApp(let name):
             String(localized: "“\(name)” was changed outside NotesV.")
+        case .unsavedChanges(let count):
+            String(localized: "\(count) notes couldn’t be saved, so the notes folder wasn’t changed. Check that the current folder is available and try again.")
         }
     }
 }

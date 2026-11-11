@@ -19,18 +19,20 @@ enum RichPasteImporter {
     /// A list marker or checkbox at the start of a line. Rich text keeps these as ordinary characters.
     private static let markerPattern = #"^[\t ]*(?:[•◦▪▫‣∙·*–—-]|\d{1,3}[.)]|[☐☑☒✓✔◻◼])[\t ]+"#
 
-    /// The note on the clipboard, or `nil` if there is no rich text to read.
+    /// The note on the clipboard, or `nil` if there is no rich text to read. Rich text without any
+    /// text, such as a lone image, is `nil` too, so pasting it never replaces the selection with nothing.
     static func document(from pasteboard: NSPasteboard) -> NoteDocument? {
+        let document: NoteDocument
         if let data = pasteboard.data(forType: .rtfd), let text = NSAttributedString(rtfd: data, documentAttributes: nil) {
-            return document(from: text)
+            document = Self.document(from: text)
+        } else if let data = pasteboard.data(forType: .rtf), let text = NSAttributedString(rtf: data, documentAttributes: nil) {
+            document = Self.document(from: text)
+        } else if let data = pasteboard.data(forType: .html), let text = attributedString(html: data) {
+            document = Self.document(from: text)
+        } else {
+            return nil
         }
-        if let data = pasteboard.data(forType: .rtf), let text = NSAttributedString(rtf: data, documentAttributes: nil) {
-            return document(from: text)
-        }
-        if let data = pasteboard.data(forType: .html), let text = attributedString(html: data) {
-            return document(from: text)
-        }
-        return nil
+        return document.hasContent ? document : nil
     }
 
     static func attributedString(html data: Data) -> NSAttributedString? {
